@@ -2,7 +2,7 @@
   "name": "calisyn-service",
   "version": "1.0.0",
   "private": false,
-  "description": "Calisyn Service",
+  "description": "Calisyn backend service built with Express, supporting OpenAI API and multiple models",
   "author": "ChenZhaoYu <chenzhaoyu1994@gmail.com>, liut <liutao@liut.cc>",
   "keywords": [
     "calisyn",

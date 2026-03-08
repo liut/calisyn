@@ -2,13 +2,18 @@
   "name": "calisyn",
   "version": "2.11.1",
   "private": false,
-  "description": "Calisyn - AI Chat Application",
+  "description": "Calisyn - AI Chat Web Application built with Vue 3",
   "author": "ChenZhaoYu <chenzhaoyu1994@gmail.com>, liut <liutao@liut.cc>",
   "keywords": [
     "calisyn",
+    "ai-chat",
+    "vue3",
     "chatgpt",
+    "openai",
     "chatbot",
-    "vue"
+    "vue",
+    "sse",
+    "streaming"
   ],
   "scripts": {
     "dev": "vite",

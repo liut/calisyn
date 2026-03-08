@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ChatGPT Web is a dual-model ChatGPT web application with Vue 3 frontend and Express backend.
+Calisyn is an AI chat application with Vue 3 frontend and Express backend.
 
 - **Frontend**: Vue 3 + Vite + Naive UI + Pinia + Vue Router + Vue I18n + Tailwind CSS
-- **Backend**: Express + ChatGPT SDK (supports both official API and unofficial Web API)
+- **Backend**: Express + AI SDK (supports OpenAI API and reverse proxy)
 - **Node Version**: ^16 || ^18 || ^20
 
 ## Common Commands

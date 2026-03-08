@@ -1,11 +1,11 @@
 {
-  "name": "chatgpt-web",
+  "name": "calisyn",
   "version": "2.11.1",
   "private": false,
-  "description": "ChatGPT Web",
-  "author": "ChenZhaoYu <chenzhaoyu1994@gmail.com>",
+  "description": "Calisyn - AI Chat Application",
+  "author": "ChenZhaoYu <chenzhaoyu1994@gmail.com>, liut <liutao@liut.cc>",
   "keywords": [
-    "chatgpt-web",
+    "calisyn",
     "chatgpt",
     "chatbot",
     "vue"

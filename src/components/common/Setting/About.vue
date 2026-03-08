@@ -49,7 +49,7 @@ onMounted(() => {
           {{ $t("setting.openSource") }}
           <a
             class="text-blue-600 dark:text-blue-500"
-            href="https://github.com/Chanzhaoyu/chatgpt-web"
+            href="https://github.com/liut/calisyn"
             target="_blank"
           >
             GitHub

@@ -1,4 +1,4 @@
-# ChatGPT Web
+# Calisyn
 
 > Disclaimer: This project is only published on GitHub, based on the MIT license, free and for open source learning usage. And there will be no any form of account selling, paid service, discussion group, discussion group and other behaviors. Beware of being deceived.
 
@@ -7,7 +7,7 @@
 ![cover](./docs/c1.png)
 ![cover2](./docs/c2.png)
 
-- [ChatGPT Web](#chatgpt-web)
+- [Calisyn](#calisyn)
 	- [Introduction](#introduction)
 	- [Roadmap](#roadmap)
 	- [Prerequisites](#prerequisites)
@@ -184,13 +184,13 @@ Common:
 #### Docker build & Run
 
 ```bash
-docker build -t chatgpt-web .
+docker build -t calisyn .
 
 # Foreground running
-docker run --name chatgpt-web --rm -it -p 127.0.0.1:3002:3002 --env OPENAI_API_KEY=your_api_key chatgpt-web
+docker run --name calisyn --rm -it -p 127.0.0.1:3002:3002 --env OPENAI_API_KEY=your_api_key calisyn
 
 # Background running
-docker run --name chatgpt-web -d -p 127.0.0.1:3002:3002 --env OPENAI_API_KEY=your_api_key chatgpt-web
+docker run --name calisyn -d -p 127.0.0.1:3002:3002 --env OPENAI_API_KEY=your_api_key calisyn
 
 # Run address
 http://localhost:3002/
@@ -198,14 +198,14 @@ http://localhost:3002/
 
 #### Docker compose
 
-[Hub address](https://hub.docker.com/repository/docker/chenzhaoyu94/chatgpt-web/general)
+[Hub address](https://hub.docker.com/repository/docker/liut7/chatgpt-web/general)
 
 ```yml
 version: '3'
 
 services:
   app:
-    image: chenzhaoyu94/chatgpt-web # always use latest, pull the tag image again to update
+    image: liut7/calisyn # always use latest, pull the tag image again to update
     ports:
       - 127.0.0.1:3002:3002
     environment:
@@ -279,7 +279,7 @@ Fill in the following configuration in the nginx configuration file to prevent c
 
 ### Deploy with Sealos
 
-[![](https://raw.githubusercontent.com/labring-actions/templates/main/Deploy-on-Sealos.svg)](https://cloud.sealos.io/?openapp=system-fastdeploy%3FtemplateName%3Dchatgpt-web)
+[![](https://raw.githubusercontent.com/labring-actions/templates/main/Deploy-on-Sealos.svg)](https://cloud.sealos.io/?openapp=system-fastdeploy%3FtemplateName%3Dcalisyn)
 
 > Environment variables are consistent with Docker environment variables
 

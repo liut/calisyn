@@ -3,7 +3,7 @@ version: '3'
 services:
   app:
     container_name: chatgpt-web
-    image: chenzhaoyu94/chatgpt-web # Always use latest, just pull the tag image again when updating
+    image: liut7/calisyn # Always use latest, just pull the tag image again when updating
     ports:
       - 3002:3002
     environment:

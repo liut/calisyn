@@ -1,4 +1,4 @@
-# ChatGPT Web
+# Calisyn
 
 > 声明：此项目只发布于 GitHub，基于 MIT 协议，免费且作为开源学习使用。并且不会有任何形式的卖号、付费服务、讨论群、讨论组等行为。谨防受骗。
 
@@ -7,7 +7,7 @@
 ![cover](./docs/c1.png)
 ![cover2](./docs/c2.png)
 
-- [ChatGPT Web](#chatgpt-web)
+- [Calisyn](#calisyn)
 	- [介绍](#介绍)
 	- [待实现路线](#待实现路线)
 	- [前置要求](#前置要求)
@@ -188,13 +188,13 @@ pnpm dev
 #### Docker build & Run
 
 ```bash
-docker build -t chatgpt-web .
+docker build -t calisyn .
 
 # 前台运行
-docker run --name chatgpt-web --rm -it -p 127.0.0.1:3002:3002 --env OPENAI_API_KEY=your_api_key chatgpt-web
+docker run --name calisyn --rm -it -p 127.0.0.1:3002:3002 --env OPENAI_API_KEY=your_api_key calisyn
 
 # 后台运行
-docker run --name chatgpt-web -d -p 127.0.0.1:3002:3002 --env OPENAI_API_KEY=your_api_key chatgpt-web
+docker run --name calisyn -d -p 127.0.0.1:3002:3002 --env OPENAI_API_KEY=your_api_key calisyn
 
 # 运行地址
 http://localhost:3002/
@@ -202,14 +202,14 @@ http://localhost:3002/
 
 #### Docker compose
 
-[Hub 地址](https://hub.docker.com/repository/docker/chenzhaoyu94/chatgpt-web/general)
+[Hub 地址](https://hub.docker.com/repository/docker/liut7/chatgpt-web/general)
 
 ```yml
 version: '3'
 
 services:
   app:
-    image: chenzhaoyu94/chatgpt-web # 总是使用 latest ,更新时重新 pull 该 tag 镜像即可
+    image: liut7/calisyn # 总是使用 latest ,更新时重新 pull 该 tag 镜像即可
     ports:
       - 127.0.0.1:3002:3002
     environment:
@@ -282,7 +282,7 @@ services:
 
 ### 使用 Sealos 部署
 
-[![](https://raw.githubusercontent.com/labring-actions/templates/main/Deploy-on-Sealos.svg)](https://cloud.sealos.io/?openapp=system-fastdeploy%3FtemplateName%3Dchatgpt-web)
+[![](https://raw.githubusercontent.com/labring-actions/templates/main/Deploy-on-Sealos.svg)](https://cloud.sealos.io/?openapp=system-fastdeploy%3FtemplateName%3Dcalisyn)
 
 > 环境变量与 Docker 环境变量一致
 

@@ -1,11 +1,11 @@
 {
-  "name": "chatgpt-web-service",
+  "name": "calisyn-service",
   "version": "1.0.0",
   "private": false,
-  "description": "ChatGPT Web Service",
-  "author": "ChenZhaoYu <chenzhaoyu1994@gmail.com>",
+  "description": "Calisyn Service",
+  "author": "ChenZhaoYu <chenzhaoyu1994@gmail.com>, liut <liutao@liut.cc>",
   "keywords": [
-    "chatgpt-web",
+    "calisyn",
     "chatgpt",
     "chatbot",
     "express"

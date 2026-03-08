@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: chatgpt-web
+  name: calisyn
   labels:
-    app: chatgpt-web
+    app: calisyn
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: chatgpt-web
+      app: calisyn
   strategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        app: chatgpt-web
+        app: calisyn
     spec:
       containers:
-        - image: chenzhaoyu94/chatgpt-web
-          name: chatgpt-web
+        - image: liut7/calisyn
+          name: calisyn
           imagePullPolicy: Always
           ports:
             - containerPort: 3002
@@ -53,14 +53,14 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: chatgpt-web
-  name: chatgpt-web
+    app: calisyn
+  name: calisyn
 spec:
   ports:
-    - name: chatgpt-web
+    - name: calisyn
       port: 3002
       protocol: TCP
       targetPort: 3002
   selector:
-    app: chatgpt-web
+    app: calisyn
   type: ClusterIP

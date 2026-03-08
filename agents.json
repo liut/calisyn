@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/ClaudeDesktop/claude/refs/heads/main/agents/schema.json",
   "version": 1,
-  "projectName": "chatgpt-web",
-  "description": "ChatGPT Web 前端项目，包含 Vue 3 前端和 Express 后端服务",
+  "projectName": "calisyn",
+  "description": "Calisyn 项目，包含 Vue 3 前端和 Express 后端服务",
   "mainEntry": "src/main.ts",
   "buildCommands": {
     "frontend": {

@@ -151,9 +151,11 @@ router.post('/verify', async (req, res) => {
   }
 })
 
+const apiPrefix = process.env.API_PREFIX || '/api'
+
 app.use('', router)
-app.use('/api', router)
-app.use('/api/auth', authRouter)
+app.use(apiPrefix, router)
+app.use(`${apiPrefix}/auth`, authRouter)
 app.set('trust proxy', 1)
 
 const port = process.env.SERVICE_PORT || 3002

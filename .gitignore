@@ -31,3 +31,4 @@ coverage
 
 # Environment variables files
 .env
+*.local.*

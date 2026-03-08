@@ -13,21 +13,21 @@ const chatStore = useChatStore()
 
 const dataSources = computed(() => chatStore.history)
 
-async function handleSelect({ uuid }: Chat.History) {
-  if (isActive(uuid))
+async function handleSelect({ csid }: Chat.History) {
+  if (isActive(csid))
     return
 
   if (chatStore.active)
     chatStore.updateHistory(chatStore.active, { isEdit: false })
-  await chatStore.setActive(uuid)
+  await chatStore.setActive(csid)
 
   if (isMobile.value)
     appStore.setSiderCollapsed(true)
 }
 
-function handleEdit({ uuid }: Chat.History, isEdit: boolean, event?: MouseEvent) {
+function handleEdit({ csid }: Chat.History, isEdit: boolean, event?: MouseEvent) {
   event?.stopPropagation()
-  chatStore.updateHistory(uuid, { isEdit })
+  chatStore.updateHistory(csid, { isEdit })
 }
 
 function handleDelete(index: number, event?: MouseEvent | TouchEvent) {
@@ -39,14 +39,14 @@ function handleDelete(index: number, event?: MouseEvent | TouchEvent) {
 
 const handleDeleteDebounce = debounce(handleDelete, 600)
 
-function handleEnter({ uuid }: Chat.History, isEdit: boolean, event: KeyboardEvent) {
+function handleEnter({ csid }: Chat.History, isEdit: boolean, event: KeyboardEvent) {
   event?.stopPropagation()
   if (event.key === 'Enter')
-    chatStore.updateHistory(uuid, { isEdit })
+    chatStore.updateHistory(csid, { isEdit })
 }
 
-function isActive(uuid: number) {
-  return chatStore.active === uuid
+function isActive(csid: string) {
+  return chatStore.active === csid
 }
 </script>
 
@@ -63,7 +63,7 @@ function isActive(uuid: number) {
         <div v-for="(item, index) of dataSources" :key="index">
           <a
             class="relative flex items-center gap-3 px-3 py-3 break-all border rounded-md cursor-pointer hover:bg-neutral-100 group dark:border-neutral-800 dark:hover:bg-[#24272e]"
-            :class="isActive(item.uuid) && ['border-[#4b9e5f]', 'bg-neutral-100', 'text-[#4b9e5f]', 'dark:bg-[#24272e]', 'dark:border-[#4b9e5f]', 'pr-14']"
+            :class="isActive(item.csid) && ['border-[#4b9e5f]', 'bg-neutral-100', 'text-[#4b9e5f]', 'dark:bg-[#24272e]', 'dark:border-[#4b9e5f]', 'pr-14']"
             @click="handleSelect(item)"
           >
             <span>
@@ -77,7 +77,7 @@ function isActive(uuid: number) {
               />
               <span v-else>{{ item.title }}</span>
             </div>
-            <div v-if="isActive(item.uuid)" class="absolute z-10 flex visible right-1">
+            <div v-if="isActive(item.csid)" class="absolute z-10 flex visible right-1">
               <template v-if="item.isEdit">
                 <button class="p-1" @click="handleEdit(item, false, $event)">
                   <SvgIcon icon="ri:save-line" />

@@ -28,13 +28,13 @@ const ms = useMessage()
 const chatStore = useChatStore()
 
 const { isMobile } = useBasicLayout()
-const { addChat, updateChat, updateChatSome, getChatByUuidAndIndex } = useChat()
+const { addChat, updateChat, updateChatSome, getChatByCsidAndIndex } = useChat()
 const { scrollRef, scrollToBottom, scrollToBottomIfAtBottom } = useScroll()
 const { usingContext, toggleUsingContext } = useUsingContext()
 
-const { uuid } = route.params as { uuid: string }
+const csid = computed(() => route.params.csid as string ?? '')
 
-const dataSources = computed(() => chatStore.getChatByUuid(+uuid))
+const dataSources = computed(() => chatStore.getChatByCsid(csid.value))
 const conversationList = computed(() => dataSources.value.filter(item => (!item.inversion && !!item.conversationOptions)))
 
 const prompt = ref<string>('')
@@ -50,7 +50,7 @@ const { promptList: promptTemplate } = storeToRefs<any>(promptStore)
 // 未知原因刷新页面，loading 状态不会重置，手动重置
 dataSources.value.forEach((item, index) => {
   if (item.loading)
-    updateChatSome(+uuid, index, { loading: false })
+    updateChatSome(csid.value, index, { loading: false })
 })
 
 function handleSubmit() {
@@ -69,7 +69,7 @@ async function onConversation() {
   controller = new AbortController()
 
   addChat(
-    +uuid,
+    csid.value,
     {
       dateTime: new Date().toLocaleString(),
       text: message,
@@ -91,7 +91,7 @@ async function onConversation() {
     options = { ...lastContext }
 
   addChat(
-    +uuid,
+    csid.value,
     {
       dateTime: new Date().toLocaleString(),
       text: t('chat.thinking'),
@@ -110,8 +110,8 @@ async function onConversation() {
     const fetchChatAPIOnce = async () => {
       await fetchChatStream({
         prompt: message,
+        csid: csid.value,
         options,
-        signal: controller.signal,
         onMessage: (data: StreamMessage) => {
           if (data.delta)
             lastText += data.delta
@@ -122,7 +122,7 @@ async function onConversation() {
             // lastText = `>  *${t('chat.toolCalling')}*\n\n`
           try {
             updateChat(
-              +uuid,
+              csid.value,
               dataSources.value.length - 1,
               {
                 dateTime: new Date().toLocaleString(),
@@ -144,7 +144,11 @@ async function onConversation() {
               return fetchChatAPIOnce()
             }
             else if (data.finishReason) {
-              updateChatSome(+uuid, dataSources.value.length - 1, { loading: false })
+              // 当SSE返回finishReason为stop时，更新csid
+              if (data.finishReason === 'stop' && data.csid) {
+                chatStore.updateCsid(csid.value, data.csid)
+              }
+              updateChatSome(csid.value, dataSources.value.length - 1, { loading: false })
             }
 
             scrollToBottomIfAtBottom()
@@ -154,7 +158,7 @@ async function onConversation() {
           }
         },
       })
-      updateChatSome(+uuid, dataSources.value.length - 1, { loading: false })
+      updateChatSome(csid.value, dataSources.value.length - 1, { loading: false })
     }
 
     await fetchChatAPIOnce()
@@ -164,7 +168,7 @@ async function onConversation() {
 
     if (error.message === 'canceled') {
       updateChatSome(
-        +uuid,
+        csid.value,
         dataSources.value.length - 1,
         {
           loading: false,
@@ -174,11 +178,11 @@ async function onConversation() {
       return
     }
 
-    const currentChat = getChatByUuidAndIndex(+uuid, dataSources.value.length - 1)
+    const currentChat = getChatByCsidAndIndex(csid.value, dataSources.value.length - 1)
 
     if (currentChat?.text && currentChat.text !== '') {
       updateChatSome(
-        +uuid,
+        csid.value,
         dataSources.value.length - 1,
         {
           text: `${currentChat.text}\n[${errorMessage}]`,
@@ -190,7 +194,7 @@ async function onConversation() {
     }
 
     updateChat(
-      +uuid,
+      csid.value,
       dataSources.value.length - 1,
       {
         dateTime: new Date().toLocaleString(),
@@ -227,7 +231,7 @@ async function onRegenerate(index: number) {
   loading.value = true
 
   updateChat(
-    +uuid,
+    csid.value,
     index,
     {
       dateTime: new Date().toLocaleString(),
@@ -246,6 +250,7 @@ async function onRegenerate(index: number) {
     const fetchChatAPIOnce = async () => {
       await fetchChatStream({
         prompt: message,
+        csid: csid.value,
         options,
         regen: true,
         signal: controller.signal,
@@ -260,7 +265,7 @@ async function onRegenerate(index: number) {
 
           try {
             updateChat(
-              +uuid,
+              csid.value,
               index,
               {
                 dateTime: new Date().toLocaleString(),
@@ -282,7 +287,11 @@ async function onRegenerate(index: number) {
               return fetchChatAPIOnce()
             }
             else if (data.finishReason) {
-              updateChatSome(+uuid, dataSources.value.length - 1, { loading: false })
+              // 当SSE返回finishReason为stop时，更新csid
+              if (data.finishReason === 'stop' && data.csid) {
+                chatStore.updateCsid(csid.value, data.csid)
+              }
+              updateChatSome(csid.value, dataSources.value.length - 1, { loading: false })
             }
           }
           catch (error) {
@@ -290,14 +299,14 @@ async function onRegenerate(index: number) {
           }
         },
       })
-      updateChatSome(+uuid, index, { loading: false })
+      updateChatSome(csid.value, index, { loading: false })
     }
     await fetchChatAPIOnce()
   }
   catch (error: any) {
     if (error.message === 'canceled') {
       updateChatSome(
-        +uuid,
+        csid.value,
         index,
         {
           loading: false,
@@ -309,7 +318,7 @@ async function onRegenerate(index: number) {
     const errorMessage = error?.message ?? t('common.wrong')
 
     updateChat(
-      +uuid,
+      csid.value,
       index,
       {
         dateTime: new Date().toLocaleString(),
@@ -376,7 +385,7 @@ function handleDelete(index: number) {
     positiveText: t('common.yes'),
     negativeText: t('common.no'),
     onPositiveClick: () => {
-      chatStore.deleteChatByUuid(+uuid, index)
+      chatStore.deleteChatByCsid(csid.value, index)
     },
   })
 }
@@ -391,7 +400,7 @@ function handleClear() {
     positiveText: t('common.yes'),
     negativeText: t('common.no'),
     onPositiveClick: () => {
-      chatStore.clearChatByUuid(+uuid)
+      chatStore.clearChatByCsid(csid.value)
     },
   })
 }

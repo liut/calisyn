@@ -107,6 +107,7 @@ async function onConversation() {
   try {
     let lastText = ''
     let toolCalling = false
+    let toolCalls: Chat.Tool[] = []
     const fetchChatAPIOnce = async () => {
       await fetchChatStream({
         prompt: message,
@@ -117,9 +118,15 @@ async function onConversation() {
             lastText += data.delta
           else if (data.text)
             lastText = data.text ?? ''
-          else if (data.tool_calls && data.tool_calls.length > 0)
+          else if (data.tool_calls && data.tool_calls.length > 0) {
             toolCalling = true
-            // lastText = `>  *${t('chat.toolCalling')}*\n\n`
+            // 直接用新的 tool_calls 数据覆盖
+            toolCalls = data.tool_calls.map(tc => ({
+              id: tc.id || '',
+              name: tc.function?.name || '',
+              arguments: tc.function?.arguments || ''
+            }))
+          }
           try {
             updateChat(
               csid.value,
@@ -131,6 +138,7 @@ async function onConversation() {
                 error: false,
                 loading: true,
                 toolCalling,
+                toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
                 conversationOptions: { conversationId: data.csid, parentMessageId: data.id || '' },
                 requestOptions: { prompt: message, options: { ...options } },
               },
@@ -247,6 +255,7 @@ async function onRegenerate(index: number) {
   try {
     let lastText = ''
     let toolCalling = false
+    let toolCalls: Chat.Tool[] = []
     const fetchChatAPIOnce = async () => {
       await fetchChatStream({
         prompt: message,
@@ -259,9 +268,15 @@ async function onRegenerate(index: number) {
             lastText += data.delta
           else if (data.text)
             lastText = data.text ?? ''
-          else if (data.tool_calls && data.tool_calls.length > 0)
+          else if (data.tool_calls && data.tool_calls.length > 0) {
             toolCalling = true
-            // lastText = `>  *${t('chat.toolCalling')}*\n\n`
+            // 直接用新的 tool_calls 数据覆盖
+            toolCalls = data.tool_calls.map(tc => ({
+              id: tc.id || '',
+              name: tc.function?.name || '',
+              arguments: tc.function?.arguments || ''
+            }))
+          }
 
           try {
             updateChat(
@@ -274,6 +289,7 @@ async function onRegenerate(index: number) {
                 error: false,
                 loading: true,
                 toolCalling,
+                toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
                 conversationOptions: { conversationId: data.csid, parentMessageId: data.id },
                 requestOptions: { prompt: message, options: { ...options } },
               },
@@ -514,6 +530,7 @@ onUnmounted(() => {
                   :error="item.error"
                   :loading="item.loading"
                   :tool-calling="item.toolCalling"
+                  :tool-calls="item.toolCalls"
                   @regenerate="onRegenerate(index)"
                   @delete="handleDelete(index)"
                 />

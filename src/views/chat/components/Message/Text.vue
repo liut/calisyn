@@ -16,6 +16,7 @@ interface Props {
   loading?: boolean
   asRawText?: boolean
   toolCalling?: boolean
+  toolCalls?: Chat.Tool[]
 }
 
 const props = defineProps<Props>()
@@ -123,6 +124,20 @@ function escapeBrackets(text: string) {
   })
 }
 
+function formatArguments(args: string): string {
+  try {
+    const parsed = JSON.parse(args)
+    // 转换为更友好的显示格式: key: value
+    const parts: string[] = []
+    for (const [key, value] of Object.entries(parsed)) {
+      parts.push(`${key}: ${value}`)
+    }
+    return parts.join(', ')
+  } catch {
+    return args
+  }
+}
+
 onMounted(() => {
   addCopyEvents()
 })
@@ -140,10 +155,18 @@ onUnmounted(() => {
   <div class="text-black" :class="wrapClass">
     <div ref="textRef" class="leading-relaxed break-words">
       <div v-if="!inversion">
-        <div v-if="toolCalling" class="text-xs markdown-body">
-          <blockquote style="padding: .4em;">
-            <i>{{ $t('chat.toolCalling') }} <span v-if="!loading">... {{ $t('common.done') }}</span></i>
-          </blockquote>
+        <div v-if="toolCalls && toolCalls.length > 0" class="mb-2">
+          <div class="text-xs text-gray-500 mb-2">
+            <i>{{ $t('chat.toolCalling') }} <span v-if="loading">...</span></i>
+          </div>
+          <div v-for="(tc, idx) in toolCalls" :key="idx" class="inline-flex flex-wrap items-center gap-2 mb-2">
+            <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 font-mono">
+              {{ tc.name }}
+            </span>
+            <span v-if="tc.arguments" class="text-xs text-gray-600 dark:text-gray-400">
+              {{ formatArguments(tc.arguments) }}
+            </span>
+          </div>
         </div>
         <div v-if="!asRawText" class="markdown-body" :class="{ 'markdown-body-generate': loading }" v-html="text" />
         <div v-else class="whitespace-pre-wrap" v-text="text" />

@@ -2,6 +2,8 @@ declare namespace Chat {
 
 	interface Tool {
 		name: string
+		arguments?: string
+		id?: string
 	}
 
 	interface Chat {

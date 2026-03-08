@@ -88,9 +88,11 @@ export function fetchChatStream(
   if (token)
     headers.Authorization = `Bearer ${token}`
 
+  const apiPath = import.meta.env.VITE_API_PATH || '/api'
+
   // 创建并配置SSE连接
   const createEventSource = () => {
-    eventSource = new SSE('/api/chat-sse', {
+    eventSource = new SSE(`${apiPath}/chat-sse`, {
       headers,
       payload: JSON.stringify({
         csid,

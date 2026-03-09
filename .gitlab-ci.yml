@@ -17,7 +17,7 @@ variables:
   INLINE_RUNTIME_CHUNK: 'false'
   GENERATE_SOURCEMAP: 'false'
   SKIP_PREFLIGHT_CHECK: 'true'
-  VITE_API_PATH: /api
+  VITE_API_PATH: /api/m
   VITE_TOKEN_NAME: oceans-token
   VITE_AUTH_HEADER: token
 
@@ -47,13 +47,12 @@ deploy-to-self-branch:
   stage: build
   variables:
     GENERATE_SOURCEMAP: true
-    VITE_API_PATH: /ma/api
   script:
     - export VITE_BASE_PATH=/apps/${NAME}-${DEV_BRANCH}
     - pnpm run build
     - ssh ${DEPLOY_USER:-sa}@${DEVELOP_HOST:-moon} "test -d /var/www/apps/${NAME}-${DEV_BRANCH} || mkdir -p /var/www/apps/${NAME}-${DEV_BRANCH}"
     - rsync -vrlptC --delete --exclude='.DS_*' dist/* "${DEVELOP_HOST}:/var/www/apps/${NAME}-${DEV_BRANCH}"
-    # - node scripts/notify_wx.js ${DEVELOP_HOST} app-${NAME}-${DEV_BRANCH}-testing
+    - ./scripts/notify_wx.sh ${DEVELOP_HOST} app-${NAME}-${DEV_BRANCH}-testing
 
   except:
     - dev
@@ -66,12 +65,26 @@ deploy-to-testing:
   variables:
     GENERATE_SOURCEMAP: true
     VITE_BASE_PATH: /apps/assistant
-    VITE_API_PATH: /ma/api
   script:
     - pnpm run build
     - ssh ${DEPLOY_USER:-sa}@${DEVELOP_HOST:-moon} "test -d /var/www/apps/${NAME}-${DEV_BRANCH} || mkdir /var/www/apps/${NAME}-${DEV_BRANCH}"
     - rsync -vrlptC --delete --exclude='.DS_*' dist/* "${DEVELOP_HOST}:/var/www/apps/${NAME}-${DEV_BRANCH}/"
-    # - node scripts/notify_wx.js ${DEVELOP_HOST} ${NAME}-${DEV_BRANCH}-testing
+    - ./scripts/notify_wx.sh ${DEVELOP_HOST} ${NAME}-${DEV_BRANCH}-testing
   only:
     - dev@cupola/apps/assistant
     - main@cupola/apps/assistant
+
+build-for-apps-online:
+  stage: build
+  variables:
+    GENERATE_SOURCEMAP: true
+    VITE_BASE_PATH: /apps/assistant
+  script:
+    - pnpm run build
+    - ls dist | xargs tar -cvzf apps-${NAME}-${TAG}.tar.gz -C dist
+    - ssh ${DEPLOY_USER:-sa}@${DEPLOY_HOST:-earth} "test -d public/${NAME} || mkdir -p public/${NAME}"
+    - scp apps-${NAME}-${TAG}.tar.gz "${DEPLOY_HOST}:public/${NAME}/"
+    - ./scripts/notify_wx.sh apps-${DEPLOY_HOST} ${NAME}-online
+  only:
+    - main@cupola/apps/assistant
+  when: manual

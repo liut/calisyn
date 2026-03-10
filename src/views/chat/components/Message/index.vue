@@ -17,6 +17,7 @@ interface Props {
   loading?: boolean
   toolCalling?: boolean
   toolCalls?: Chat.Tool[]
+  chunks?: Chat.MessageChunk[]
 }
 
 interface Emit {
@@ -122,6 +123,7 @@ async function handleCopy() {
           :loading="loading"
           :tool-calling="toolCalling"
           :tool-calls="toolCalls"
+          :chunks="chunks"
           :as-raw-text="asRawText"
         />
         <div class="flex flex-col">

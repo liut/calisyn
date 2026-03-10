@@ -6,6 +6,17 @@ declare namespace Chat {
 		id?: string
 	}
 
+	// 消息段落类型
+	type MessageChunkType = 'text' | 'tool_call_start' | 'tool_call_progress' | 'tool_call_end'
+
+	// 消息段落 - 用于流式渲染工具调用和文本的穿插
+	interface MessageChunk {
+		type: MessageChunkType
+		content: string      // 文本内容
+		toolCalls?: Tool[]  // 工具调用信息
+		loading?: boolean    // 是否正在加载
+	}
+
 	interface Chat {
 		dateTime: string
 		text: string
@@ -18,6 +29,7 @@ declare namespace Chat {
 		toolCalls?: Tool[]
 		toolCallId?: string
 		toolCallResult?: string
+		chunks?: MessageChunk[] // 消息段落，用于流式渲染工具调用和文本穿插
 	}
 
 	interface History {

@@ -17,6 +17,7 @@ interface Props {
   asRawText?: boolean
   toolCalling?: boolean
   toolCalls?: Chat.Tool[]
+  chunks?: Chat.MessageChunk[]
 }
 
 const props = defineProps<Props>()
@@ -53,14 +54,18 @@ const wrapClass = computed(() => {
   ]
 })
 
-const text = computed(() => {
-  const value = props.text ?? ''
+// 渲染单个文本内容
+function renderMarkdown(value: string): string {
   if (!props.asRawText) {
-    // 对数学公式进行处理，自动添加 $$ 符号
     const escapedText = escapeBrackets(escapeDollarNumber(value))
     return mdi.render(escapedText)
   }
   return value
+}
+
+const text = computed(() => {
+  const value = props.text ?? ''
+  return renderMarkdown(value)
 })
 
 function highlightBlock(str: string, lang?: string) {
@@ -155,21 +160,64 @@ onUnmounted(() => {
   <div class="text-black" :class="wrapClass">
     <div ref="textRef" class="leading-relaxed break-words">
       <div v-if="!inversion">
-        <div v-if="toolCalls && toolCalls.length > 0" class="mb-2">
-          <div class="text-xs text-gray-500 mb-2">
-            <i>{{ $t('chat.toolCalling') }} <span v-if="loading">...</span></i>
+        <!-- 使用 chunks 模式渲染（支持工具调用穿插） -->
+        <template v-if="chunks && chunks.length > 0">
+          <div v-for="(chunk, idx) in chunks" :key="idx" class="mb-3">
+            <!-- 工具调用开始/进行中 -->
+            <div v-if="chunk.type === 'tool_call_start' || chunk.type === 'tool_call_progress'" class="mb-2 text-sm">
+              <div v-if="chunk.toolCalls && chunk.toolCalls.length > 0">
+                <span
+                  v-for="(tc, tcIdx) in chunk.toolCalls"
+                  :key="tcIdx"
+                  class="inline-flex items-center gap-1 mr-2"
+                >
+                  <span class="text-blue-500 font-medium">{{ tc.name }}</span>
+                  <span class="text-gray-500">{{ formatArguments(tc.arguments || '') }}</span>
+                  <span v-if="chunk.loading" class="text-gray-400 animate-pulse">...</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- 工具调用结束 -->
+            <div v-else-if="chunk.type === 'tool_call_end'" class="mb-2 text-sm">
+              <div v-if="chunk.toolCalls && chunk.toolCalls.length > 0">
+                <span
+                  v-for="(tc, tcIdx) in chunk.toolCalls"
+                  :key="tcIdx"
+                  class="inline-flex items-center gap-1 mr-2"
+                >
+                  <span class="text-green-500 font-medium">{{ tc.name }}</span>
+                  <span class="text-gray-500">{{ formatArguments(tc.arguments || '') }}</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- 文本段落 -->
+            <div v-else-if="chunk.type === 'text'">
+              <div v-if="!asRawText" class="markdown-body" :class="{ 'markdown-body-generate': chunk.loading }" v-html="renderMarkdown(chunk.content)" />
+              <div v-else class="whitespace-pre-wrap" v-text="chunk.content" />
+            </div>
           </div>
-          <div v-for="(tc, idx) in toolCalls" :key="idx" class="inline-flex flex-wrap items-center gap-2 mb-2">
-            <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 font-mono">
-              {{ tc.name }}
-            </span>
-            <span v-if="tc.arguments" class="text-xs text-gray-600 dark:text-gray-400">
-              {{ formatArguments(tc.arguments) }}
-            </span>
+        </template>
+
+        <!-- 兼容旧模式：没有 chunks 时使用原有逻辑 -->
+        <template v-else>
+          <div v-if="toolCalls && toolCalls.length > 0" class="mb-2">
+            <div class="text-xs text-gray-500 mb-2">
+              <i>{{ $t('chat.toolCalling') }} <span v-if="loading">...</span></i>
+            </div>
+            <div v-for="(tc, idx) in toolCalls" :key="idx" class="inline-flex flex-wrap items-center gap-2 mb-2">
+              <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 font-mono">
+                {{ tc.name }}
+              </span>
+              <span v-if="tc.arguments" class="text-xs text-gray-600 dark:text-gray-400">
+                {{ formatArguments(tc.arguments) }}
+              </span>
+            </div>
           </div>
-        </div>
-        <div v-if="!asRawText" class="markdown-body" :class="{ 'markdown-body-generate': loading }" v-html="text" />
-        <div v-else class="whitespace-pre-wrap" v-text="text" />
+          <div v-if="!asRawText" class="markdown-body" :class="{ 'markdown-body-generate': loading }" v-html="text" />
+          <div v-else class="whitespace-pre-wrap" v-text="text" />
+        </template>
       </div>
       <div v-else class="whitespace-pre-wrap" v-text="text" />
     </div>

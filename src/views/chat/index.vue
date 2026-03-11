@@ -14,7 +14,7 @@ import { HoverButton, SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { useChatStore, usePromptStore } from '@/store'
 import type { StreamMessage } from '@/api'
-import { fetchChatStream } from '@/api'
+import { fetchChatStream, fetchConversationTitle } from '@/api'
 import { t } from '@/locales'
 
 let controller = new AbortController()
@@ -184,9 +184,23 @@ function createSSEHandler(options: SSEHandlerOptions) {
           return { ...chunk, loading: false }
         })
 
-        // 当 finishReason 为 stop 时更新 csid
-        if (data.finishReason === 'stop' && data.csid) {
-          chatStore.updateCsid(currentCsid, data.csid)
+        // 当 finishReason 为 stop 时更新 csid 并获取标题
+        if (data.finishReason === 'stop') {
+          // 更新 csid
+          if (data.csid) {
+            chatStore.updateCsid(currentCsid, data.csid)
+          }
+
+          // 获取聊天标题
+          const finalCsid = data.csid || currentCsid
+          fetchConversationTitle(finalCsid).then((res: any) => {
+            const title = res?.data?.data?.title
+            if (title) {
+              chatStore.updateHistory(finalCsid, { title })
+            }
+          }).catch((err) => {
+            console.warn('Failed to update conversation title:', err)
+          })
         }
         updateChatSome(currentCsid, targetIndex, { loading: false, chunks })
       }

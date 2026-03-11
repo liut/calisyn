@@ -1,6 +1,7 @@
 import type { AxiosProgressEvent, GenericAbortSignal } from 'axios'
 import { SSE } from 'sse.js'
 import { get, post } from '@/utils/request'
+import request from '@/utils/request/axios'
 import { useAuthStore, useSettingStore } from '@/store'
 
 export function authLogout() {
@@ -232,5 +233,12 @@ export function fetchVerify<T>(token: string) {
   return post<T>({
     url: '/verify',
     data: { token },
+  })
+}
+
+export function fetchConversationTitle<T = unknown>(csid: string) {
+  return request({
+    url: `/conversation/${csid}/title`,
+    method: 'PATCH',
   })
 }

@@ -47,6 +47,190 @@ const promptStore = usePromptStore()
 // 使用storeToRefs，保证store修改后，联想部分能够重新渲染
 const { promptList: promptTemplate } = storeToRefs<any>(promptStore)
 
+// ============ SSE 消息处理核心逻辑 ============
+
+interface SSEHandlerOptions {
+  message: string
+  csid: string
+  options: Chat.ConversationRequest
+  index?: number // 不提供则为新增消息
+  regen?: boolean
+  signal?: AbortSignal
+}
+
+function createSSEHandler(options: SSEHandlerOptions) {
+  const { message: originalMessage, csid: currentCsid, options: chatOptions, index, regen, signal } = options
+
+  // 状态变量
+  let chunks: Chat.MessageChunk[] = []
+  let currentMessage = originalMessage
+  // 记录上一个 delta（用于去重）
+  let lastDelta = ''
+
+  // 处理单条 SSE 消息
+  const handleMessage = (data: StreamMessage) => {
+    // 忽略空消息
+    const hasContent = (data.tool_calls && data.tool_calls.length > 0) || data.delta || data.text
+    if (!hasContent) {
+      return
+    }
+
+    // 处理工具调用数据：创建 tool_call 段落
+    if (data.tool_calls && data.tool_calls.length > 0) {
+      // 将之前的文本段落标记为已完成
+      chunks = chunks.map(chunk => {
+        if (chunk.type === 'text') {
+          return { ...chunk, loading: false }
+        }
+        return chunk
+      })
+
+      const toolCallData = data.tool_calls.map(tc => ({
+        id: tc.id || '',
+        name: tc.function?.name || '',
+        arguments: tc.function?.arguments || ''
+      }))
+
+      // 检查是否已有 tool_call 段落，避免重复创建
+      const lastChunk = chunks[chunks.length - 1]
+      if (lastChunk && lastChunk.type === 'tool_call') {
+        // 更新现有工具调用
+        chunks[chunks.length - 1] = {
+          type: 'tool_call',
+          content: '',
+          toolCalls: toolCallData,
+          loading: true
+        }
+      } else {
+        // 创建新的工具调用段落
+        chunks.push({
+          type: 'tool_call',
+          content: '',
+          toolCalls: toolCallData,
+          loading: true
+        })
+      }
+    }
+
+    // 处理文本
+    if (data.delta || data.text) {
+      const text = data.delta || data.text || ''
+
+      // 去重
+      if (text === lastDelta) {
+        return
+      }
+      lastDelta = text
+
+      // 追加到最后一个文本段落或新建
+      const lastChunk = chunks[chunks.length - 1]
+      if (lastChunk && lastChunk.type === 'text') {
+        chunks[chunks.length - 1] = {
+          ...lastChunk,
+          content: lastChunk.content + text,
+          loading: true
+        }
+      } else {
+        chunks.push({
+          type: 'text',
+          content: text,
+          loading: true
+        })
+      }
+    }
+
+    // 更新聊天状态
+    try {
+      const targetIndex = index ?? dataSources.value.length - 1
+
+      // 构建完整文本
+      const finalText = chunks
+        .filter(c => c.type === 'text')
+        .map(c => c.content)
+        .join('')
+
+      // 收集所有 toolCalls
+      const toolCalls = chunks
+        .filter(c => c.toolCalls && c.toolCalls.length > 0)
+        .flatMap(c => c.toolCalls || [])
+      const toolCalling = chunks.some(c => c.type === 'tool_call' && c.loading)
+
+      updateChat(
+        currentCsid,
+        targetIndex,
+        {
+          dateTime: new Date().toLocaleString(),
+          text: finalText,
+          inversion: false,
+          error: false,
+          loading: true,
+          toolCalling,
+          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+          chunks,
+          conversationOptions: { conversationId: data.csid, parentMessageId: data.id || '' },
+          requestOptions: { prompt: currentMessage, options: { ...chatOptions } },
+        },
+      )
+
+      // 长回复处理
+      if (openLongReply && data.finishReason === 'length') {
+        chatOptions.parentMessageId = data.id
+        currentMessage = ''
+        return true
+      }
+      else if (data.finishReason) {
+        // 标记工具调用段落和文本段落加载完成
+        chunks = chunks.map(chunk => {
+          return { ...chunk, loading: false }
+        })
+
+        // 当 finishReason 为 stop 时更新 csid
+        if (data.finishReason === 'stop' && data.csid) {
+          chatStore.updateCsid(currentCsid, data.csid)
+        }
+        updateChatSome(currentCsid, targetIndex, { loading: false, chunks })
+      }
+
+      scrollToBottomIfAtBottom()
+    }
+    catch (error) {
+      console.warn(error)
+    }
+
+    return false
+  }
+
+  // 执行请求（支持长回复的循环请求）
+  const fetchWithLongReply = async (_onMessage?: (data: StreamMessage) => void) => {
+    let continueRequest = false
+
+    do {
+      continueRequest = false
+
+      await fetchChatStream({
+        prompt: currentMessage,
+        csid: currentCsid,
+        options: chatOptions,
+        regen,
+        signal,
+        onMessage: (data: StreamMessage) => {
+          const shouldContinue = handleMessage(data)
+          if (shouldContinue) {
+            continueRequest = true
+          }
+          _onMessage?.(data)
+        },
+      })
+    } while (continueRequest)
+  }
+
+  return {
+    handleMessage,
+    fetch: fetchWithLongReply,
+    getChunks: () => chunks,
+  }
+}
+
 // 未知原因刷新页面，loading 状态不会重置，手动重置
 dataSources.value.forEach((item, index) => {
   if (item.loading)
@@ -105,76 +289,20 @@ async function onConversation() {
   scrollToBottom()
 
   try {
-    let lastText = ''
-    let toolCalling = false
-    let toolCalls: Chat.Tool[] = []
-    const fetchChatAPIOnce = async () => {
-      await fetchChatStream({
-        prompt: message,
-        csid: csid.value,
-        options,
-        onMessage: (data: StreamMessage) => {
-          if (data.delta)
-            lastText += data.delta
-          else if (data.text)
-            lastText = data.text ?? ''
-          else if (data.tool_calls && data.tool_calls.length > 0) {
-            toolCalling = true
-            // 直接用新的 tool_calls 数据覆盖
-            toolCalls = data.tool_calls.map(tc => ({
-              id: tc.id || '',
-              name: tc.function?.name || '',
-              arguments: tc.function?.arguments || ''
-            }))
-          }
-          try {
-            updateChat(
-              csid.value,
-              dataSources.value.length - 1,
-              {
-                dateTime: new Date().toLocaleString(),
-                text: lastText,
-                inversion: false,
-                error: false,
-                loading: true,
-                toolCalling,
-                toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-                conversationOptions: { conversationId: data.csid, parentMessageId: data.id || '' },
-                requestOptions: { prompt: message, options: { ...options } },
-              },
-            )
+    const handler = createSSEHandler({
+      message,
+      csid: csid.value,
+      options,
+    })
 
-            if (openLongReply && data.finishReason === 'length') {
-              options.parentMessageId = data.id
-              if (data.text)
-                lastText = data.text
-              message = ''
-              return fetchChatAPIOnce()
-            }
-            else if (data.finishReason) {
-              // 当SSE返回finishReason为stop时，更新csid
-              if (data.finishReason === 'stop' && data.csid) {
-                chatStore.updateCsid(csid.value, data.csid)
-              }
-              updateChatSome(csid.value, dataSources.value.length - 1, { loading: false })
-            }
+    await handler.fetch(handler.handleMessage)
 
-            scrollToBottomIfAtBottom()
-          }
-          catch (error) {
-            console.warn(error)
-          }
-        },
-      })
-      updateChatSome(csid.value, dataSources.value.length - 1, { loading: false })
-    }
-
-    await fetchChatAPIOnce()
+    updateChatSome(csid.value, dataSources.value.length - 1, { loading: false, chunks: handler.getChunks() })
   }
-  catch (error: any) {
-    const errorMessage = error?.message ?? t('common.wrong')
+  catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : t('common.wrong')
 
-    if (error.message === 'canceled') {
+    if (error instanceof Error && (error.name === 'AbortError' || error.message === 'canceled')) {
       updateChatSome(
         csid.value,
         dataSources.value.length - 1,
@@ -253,74 +381,21 @@ async function onRegenerate(index: number) {
   )
 
   try {
-    let lastText = ''
-    let toolCalling = false
-    let toolCalls: Chat.Tool[] = []
-    const fetchChatAPIOnce = async () => {
-      await fetchChatStream({
-        prompt: message,
-        csid: csid.value,
-        options,
-        regen: true,
-        signal: controller.signal,
-        onMessage: (data: StreamMessage) => {
-          if (data.delta)
-            lastText += data.delta
-          else if (data.text)
-            lastText = data.text ?? ''
-          else if (data.tool_calls && data.tool_calls.length > 0) {
-            toolCalling = true
-            // 直接用新的 tool_calls 数据覆盖
-            toolCalls = data.tool_calls.map(tc => ({
-              id: tc.id || '',
-              name: tc.function?.name || '',
-              arguments: tc.function?.arguments || ''
-            }))
-          }
+    const handler = createSSEHandler({
+      message,
+      csid: csid.value,
+      options,
+      index,
+      regen: true,
+      signal: controller.signal,
+    })
 
-          try {
-            updateChat(
-              csid.value,
-              index,
-              {
-                dateTime: new Date().toLocaleString(),
-                text: lastText,
-                inversion: false,
-                error: false,
-                loading: true,
-                toolCalling,
-                toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-                conversationOptions: { conversationId: data.csid, parentMessageId: data.id },
-                requestOptions: { prompt: message, options: { ...options } },
-              },
-            )
+    await handler.fetch(handler.handleMessage)
 
-            if (openLongReply && data.finishReason === 'length') {
-              options.parentMessageId = data.id
-              if (data.text)
-                lastText = data.text
-              message = ''
-              return fetchChatAPIOnce()
-            }
-            else if (data.finishReason) {
-              // 当SSE返回finishReason为stop时，更新csid
-              if (data.finishReason === 'stop' && data.csid) {
-                chatStore.updateCsid(csid.value, data.csid)
-              }
-              updateChatSome(csid.value, dataSources.value.length - 1, { loading: false })
-            }
-          }
-          catch (error) {
-            console.warn(error)
-          }
-        },
-      })
-      updateChatSome(csid.value, index, { loading: false })
-    }
-    await fetchChatAPIOnce()
+    updateChatSome(csid.value, index, { loading: false, chunks: handler.getChunks() })
   }
-  catch (error: any) {
-    if (error.message === 'canceled') {
+  catch (error: unknown) {
+    if (error instanceof Error && (error.name === 'AbortError' || error.message === 'canceled')) {
       updateChatSome(
         csid.value,
         index,
@@ -331,7 +406,7 @@ async function onRegenerate(index: number) {
       return
     }
 
-    const errorMessage = error?.message ?? t('common.wrong')
+    const errorMessage = error instanceof Error ? error.message : t('common.wrong')
 
     updateChat(
       csid.value,
@@ -531,6 +606,7 @@ onUnmounted(() => {
                   :loading="item.loading"
                   :tool-calling="item.toolCalling"
                   :tool-calls="item.toolCalls"
+                  :chunks="item.chunks"
                   @regenerate="onRegenerate(index)"
                   @delete="handleDelete(index)"
                 />

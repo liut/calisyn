@@ -67,12 +67,11 @@ deploy-to-testing:
     VITE_BASE_PATH: /apps/assistant
   script:
     - pnpm run build
-    - ssh ${DEPLOY_USER:-sa}@${DEVELOP_HOST:-moon} "test -d /var/www/apps/${NAME}-${DEV_BRANCH} || mkdir /var/www/apps/${NAME}-${DEV_BRANCH}"
-    - rsync -vrlptC --delete --exclude='.DS_*' dist/* "${DEVELOP_HOST}:/var/www/apps/${NAME}-${DEV_BRANCH}/"
+    - ssh ${DEPLOY_USER:-sa}@${DEVELOP_HOST:-moon} "test -d /var/www/apps/${NAME} || mkdir /var/www/apps/${NAME}"
+    - rsync -vrlptC --delete --exclude='.DS_*' dist/* "${DEVELOP_HOST}:/var/www/apps/${NAME}/"
     - ./scripts/notify_wx.sh ${DEVELOP_HOST} ${NAME}-${DEV_BRANCH}-testing
   only:
-    - dev@cupola/apps/assistant
-    - main@cupola/apps/assistant
+    - main
 
 build-for-apps-online:
   stage: build
@@ -86,5 +85,5 @@ build-for-apps-online:
     - scp apps-${NAME}-${TAG}.tar.gz "${DEPLOY_HOST}:public/${NAME}/"
     - ./scripts/notify_wx.sh apps-${DEPLOY_HOST} ${NAME}-online
   only:
-    - main@cupola/apps/assistant
+    - main
   when: manual

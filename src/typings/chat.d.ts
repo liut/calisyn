@@ -27,8 +27,6 @@ declare namespace Chat {
 		requestOptions: { prompt: string; options?: ConversationRequest | null }
 		toolCalling?: boolean
 		toolCalls?: Tool[]
-		toolCallId?: string
-		toolCallResult?: string
 		chunks?: MessageChunk[] // 消息段落，用于流式渲染工具调用和文本穿插
 	}
 

@@ -171,7 +171,7 @@ onUnmounted(() => {
                   :key="tcIdx"
                   class="inline-flex items-center gap-1 mr-2"
                 >
-                  <span class="text-blue-500 font-medium">{{ tc.name }}</span>
+                  <span class="text-green-500 font-medium">{{ tc.name }}</span>
                   <span class="text-gray-500">{{ formatArguments(tc.arguments || '') }}</span>
                   <span v-if="chunk.loading" class="text-gray-400 animate-pulse">...</span>
                 </span>
@@ -199,23 +199,9 @@ onUnmounted(() => {
             </div>
           </div>
         </template>
-
-        <!-- 兼容旧模式：没有 chunks 时使用原有逻辑 -->
         <template v-else>
-          <div v-if="toolCalls && toolCalls.length > 0" class="mb-2">
-            <div class="text-xs text-gray-500 mb-2">
-              <i>{{ $t('chat.toolCalling') }} <span v-if="loading">...</span></i>
-            </div>
-            <div v-for="(tc, idx) in toolCalls" :key="idx" class="inline-flex flex-wrap items-center gap-2 mb-2">
-              <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 font-mono">
-                {{ tc.name }}
-              </span>
-              <span v-if="tc.arguments" class="text-xs text-gray-600 dark:text-gray-400">
-                {{ formatArguments(tc.arguments) }}
-              </span>
-            </div>
-          </div>
-          <div v-if="!asRawText" class="markdown-body" :class="{ 'markdown-body-generate': loading }" v-html="text" />
+          <!-- 没有 chunks 时，使用 text 字段渲染 -->
+          <div v-if="!asRawText" class="markdown-body" v-html="text" />
           <div v-else class="whitespace-pre-wrap" v-text="text" />
         </template>
       </div>

@@ -139,11 +139,17 @@ async function onConversation() {
             // 检查最后一个段落是否是工具调用
             const lastChunk = chunks[chunks.length - 1]
             if (lastChunk && (lastChunk.type === 'tool_call_start' || lastChunk.type === 'tool_call_progress')) {
-              // 更新现有工具调用
+              // 合并工具调用（追加新的工具，而不是覆盖）
+              const existingToolCalls = lastChunk.toolCalls || []
+              // 只添加不存在的工具调用
+              const mergedToolCalls = [
+                ...existingToolCalls,
+                ...toolCallData.filter(tc => !existingToolCalls.some(etc => etc.id === tc.id))
+              ]
               chunks[chunks.length - 1] = {
                 type: 'tool_call_progress',
                 content: '',
-                toolCalls: toolCallData,
+                toolCalls: mergedToolCalls,
                 loading: true
               }
             } else {
@@ -194,7 +200,7 @@ async function onConversation() {
           }
 
           try {
-            // 构建渲染用的 chunks（兼容旧逻辑）
+            // 构建渲染用的 chunks
             const toolCalls = chunks
               .filter(c => c.toolCalls && c.toolCalls.length > 0)
               .flatMap(c => c.toolCalls || [])
@@ -255,7 +261,7 @@ async function onConversation() {
           }
         },
       })
-      updateChatSome(csid.value, dataSources.value.length - 1, { loading: false })
+      updateChatSome(csid.value, dataSources.value.length - 1, { loading: false, chunks })
     }
 
     await fetchChatAPIOnce()
@@ -342,9 +348,13 @@ async function onRegenerate(index: number) {
   )
 
   try {
-    let lastText = ''
-    let toolCalling = false
-    let toolCalls: Chat.Tool[] = []
+    // 用于追踪消息段落
+    let chunks: Chat.MessageChunk[] = []
+    // 当前是否正在工具调用中
+    let inToolCall = false
+    // 最终完整文本
+    let finalText = ''
+
     const fetchChatAPIOnce = async () => {
       await fetchChatStream({
         prompt: message,
@@ -353,33 +363,106 @@ async function onRegenerate(index: number) {
         regen: true,
         signal: controller.signal,
         onMessage: (data: StreamMessage) => {
-          if (data.delta)
-            lastText += data.delta
-          else if (data.text)
-            lastText = data.text ?? ''
-          else if (data.tool_calls && data.tool_calls.length > 0) {
-            toolCalling = true
-            // 直接用新的 tool_calls 数据覆盖
-            toolCalls = data.tool_calls.map(tc => ({
+          // 处理工具调用
+          if (data.tool_calls && data.tool_calls.length > 0) {
+            // 将之前的文本段落标记为已完成
+            chunks = chunks.map(chunk => {
+              if (chunk.type === 'text') {
+                return { ...chunk, loading: false }
+              }
+              return chunk
+            })
+
+            // 更新或添加工具调用段落
+            const toolCallData = data.tool_calls.map(tc => ({
               id: tc.id || '',
               name: tc.function?.name || '',
               arguments: tc.function?.arguments || ''
             }))
+
+            // 检查最后一个段落是否是工具调用
+            const lastChunk = chunks[chunks.length - 1]
+            if (lastChunk && (lastChunk.type === 'tool_call_start' || lastChunk.type === 'tool_call_progress')) {
+              // 合并工具调用（追加新的工具，而不是覆盖）
+              const existingToolCalls = lastChunk.toolCalls || []
+              // 只添加不存在的工具调用
+              const mergedToolCalls = [
+                ...existingToolCalls,
+                ...toolCallData.filter(tc => !existingToolCalls.some(etc => etc.id === tc.id))
+              ]
+              chunks[chunks.length - 1] = {
+                type: 'tool_call_progress',
+                content: '',
+                toolCalls: mergedToolCalls,
+                loading: true
+              }
+            } else {
+              // 创建新的工具调用段落
+              chunks.push({
+                type: 'tool_call_start',
+                content: '',
+                toolCalls: toolCallData,
+                loading: true
+              })
+            }
+
+            // 标记正在工具调用中
+            inToolCall = true
+          }
+          // 处理文本
+          else if (data.delta || data.text) {
+            const text = data.delta || data.text || ''
+
+            // 如果之前有工具调用，现在收到文本了，说明工具调用已结束
+            if (inToolCall) {
+              inToolCall = false
+              // 将之前的工具调用段落标记为结束
+              chunks = chunks.map(chunk => {
+                if (chunk.type === 'tool_call_start' || chunk.type === 'tool_call_progress') {
+                  return { ...chunk, type: 'tool_call_end' as const, loading: false }
+                }
+                return chunk
+              })
+            }
+
+            // 正常文本，追加到最后一个文本段落或新建
+            const lastChunk = chunks[chunks.length - 1]
+            if (lastChunk && lastChunk.type === 'text') {
+              chunks[chunks.length - 1] = {
+                ...lastChunk,
+                content: lastChunk.content + text,
+                loading: true
+              }
+            } else {
+              chunks.push({
+                type: 'text',
+                content: text,
+                loading: true
+              })
+            }
+            finalText += text
           }
 
           try {
+            // 构建渲染用的 chunks
+            const toolCalls = chunks
+              .filter(c => c.toolCalls && c.toolCalls.length > 0)
+              .flatMap(c => c.toolCalls || [])
+            const toolCalling = chunks.some(c => c.type === 'tool_call_start' || c.type === 'tool_call_progress')
+
             updateChat(
               csid.value,
               index,
               {
                 dateTime: new Date().toLocaleString(),
-                text: lastText,
+                text: finalText,
                 inversion: false,
                 error: false,
                 loading: true,
                 toolCalling,
                 toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-                conversationOptions: { conversationId: data.csid, parentMessageId: data.id },
+                chunks,
+                conversationOptions: { conversationId: data.csid, parentMessageId: data.id || '' },
                 requestOptions: { prompt: message, options: { ...options } },
               },
             )
@@ -387,16 +470,32 @@ async function onRegenerate(index: number) {
             if (openLongReply && data.finishReason === 'length') {
               options.parentMessageId = data.id
               if (data.text)
-                lastText = data.text
+                finalText = data.text
               message = ''
               return fetchChatAPIOnce()
             }
             else if (data.finishReason) {
+              // 标记工具调用段落为结束
+              chunks = chunks.map(chunk => {
+                if (chunk.type === 'tool_call_start' || chunk.type === 'tool_call_progress') {
+                  return { ...chunk, type: 'tool_call_end' as const, loading: false }
+                }
+                if (chunk.type === 'text') {
+                  return { ...chunk, loading: false }
+                }
+                return chunk
+              })
+
+              // 如果工具调用结束，重置标志
+              if (data.finishReason === 'tool_calls') {
+                inToolCall = false
+              }
+
               // 当SSE返回finishReason为stop时，更新csid
               if (data.finishReason === 'stop' && data.csid) {
                 chatStore.updateCsid(csid.value, data.csid)
               }
-              updateChatSome(csid.value, dataSources.value.length - 1, { loading: false })
+              updateChatSome(csid.value, index, { loading: false, chunks })
             }
           }
           catch (error) {
@@ -404,7 +503,7 @@ async function onRegenerate(index: number) {
           }
         },
       })
-      updateChatSome(csid.value, index, { loading: false })
+      updateChatSome(csid.value, index, { loading: false, chunks })
     }
     await fetchChatAPIOnce()
   }

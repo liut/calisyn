@@ -7,7 +7,7 @@ declare namespace Chat {
 	}
 
 	// 消息段落类型
-	type MessageChunkType = 'text' | 'tool_call_start' | 'tool_call_progress' | 'tool_call_end'
+	type MessageChunkType = 'text' | 'tool_call'
 
 	// 消息段落 - 用于流式渲染工具调用和文本的穿插
 	interface MessageChunk {

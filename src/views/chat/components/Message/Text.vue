@@ -160,34 +160,20 @@ onUnmounted(() => {
   <div class="text-black" :class="wrapClass">
     <div ref="textRef" class="leading-relaxed break-words">
       <div v-if="!inversion">
-        <!-- 使用 chunks 模式渲染（支持工具调用穿插） -->
+        <!-- 使用 chunks 模式渲染 -->
         <template v-if="chunks && chunks.length > 0">
           <div v-for="(chunk, idx) in chunks" :key="idx" class="mb-3">
-            <!-- 工具调用开始/进行中 -->
-            <div v-if="chunk.type === 'tool_call_start' || chunk.type === 'tool_call_progress'" class="mb-2 text-sm">
+            <!-- 工具调用段落 -->
+            <div v-if="chunk.type === 'tool_call'" class="mb-2 text-sm">
               <div v-if="chunk.toolCalls && chunk.toolCalls.length > 0">
                 <span
                   v-for="(tc, tcIdx) in chunk.toolCalls"
                   :key="tcIdx"
                   class="inline-flex items-center gap-1 mr-2"
                 >
-                  <span class="text-green-500 font-medium">{{ tc.name }}</span>
-                  <span class="text-gray-500">{{ formatArguments(tc.arguments || '') }}</span>
+                  <span class="text-gray-500 font-medium">{{ tc.name }}</span>
+                  <span class="text-green-500">{{ formatArguments(tc.arguments || '') }}</span>
                   <span v-if="chunk.loading" class="text-gray-400 animate-pulse">...</span>
-                </span>
-              </div>
-            </div>
-
-            <!-- 工具调用结束 -->
-            <div v-else-if="chunk.type === 'tool_call_end'" class="mb-2 text-sm">
-              <div v-if="chunk.toolCalls && chunk.toolCalls.length > 0">
-                <span
-                  v-for="(tc, tcIdx) in chunk.toolCalls"
-                  :key="tcIdx"
-                  class="inline-flex items-center gap-1 mr-2"
-                >
-                  <span class="text-green-500 font-medium">{{ tc.name }}</span>
-                  <span class="text-gray-500">{{ formatArguments(tc.arguments || '') }}</span>
                 </span>
               </div>
             </div>
@@ -200,7 +186,17 @@ onUnmounted(() => {
           </div>
         </template>
         <template v-else>
-          <!-- 没有 chunks 时，使用 text 字段渲染 -->
+          <!-- 没有 chunks 时，渲染 toolCalls（如果有）然后渲染 text -->
+          <div v-if="toolCalls && toolCalls.length > 0" class="mb-2 text-sm">
+            <span
+              v-for="(tc, tcIdx) in toolCalls"
+              :key="tcIdx"
+              class="inline-flex items-center gap-1 mr-2"
+            >
+              <span class="text-green-500 font-medium">{{ tc.name }}</span>
+              <span class="text-gray-500">{{ formatArguments(tc.arguments || '') }}</span>
+            </span>
+          </div>
           <div v-if="!asRawText" class="markdown-body" v-html="text" />
           <div v-else class="whitespace-pre-wrap" v-text="text" />
         </template>

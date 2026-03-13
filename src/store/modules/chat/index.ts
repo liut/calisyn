@@ -195,23 +195,23 @@ export const useChatStore = defineStore('chat-store', {
     },
 
     // 更新chat条目的csid（当SSE返回新的csid时调用）
-    updateCsid(oldCsid: string, newCsid: string) {
+    async updateCsid(oldCsid: string, newCsid: string) {
       // 更新chat数组中的csid
       const chatIndex = this.chat.findIndex(item => item.csid === oldCsid)
-      if (chatIndex !== -1) {
+      if (chatIndex !== -1)
         this.chat[chatIndex].csid = newCsid
-      }
 
       // 更新history数组中的csid
       const historyIndex = this.history.findIndex(item => item.csid === oldCsid)
-      if (historyIndex !== -1) {
+      if (historyIndex !== -1)
         this.history[historyIndex].csid = newCsid
-      }
 
       // 更新active
-      if (this.active === oldCsid) {
+      if (this.active === oldCsid)
         this.active = newCsid
-      }
+
+      // 更新路由
+      await this.reloadRoute(newCsid)
 
       this.recordState()
     },

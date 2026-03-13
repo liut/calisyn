@@ -134,11 +134,12 @@ function formatArguments(args: string): string {
     const parsed = JSON.parse(args)
     // 转换为更友好的显示格式: key: value
     const parts: string[] = []
-    for (const [key, value] of Object.entries(parsed)) {
+    for (const [key, value] of Object.entries(parsed))
       parts.push(`${key}: ${value}`)
-    }
+
     return parts.join(', ')
-  } catch {
+  }
+  catch {
     return args
   }
 }

@@ -47,6 +47,7 @@ export interface StreamMessage {
   text?: string
   tool_calls?: Array<ToolCall>
   finishReason?: string
+  title?: string
 }
 
 /**
@@ -106,12 +107,17 @@ export function fetchChatStream(
       }),
     })
 
+    const handleOpen = (e: any) => {
+      // 如果响应头中包含会话ID，则更新会话ID
+      if (e?.headers) {
+        const headerCsid = e.headers['conversation-id']?.[0]
+        if (headerCsid)
+          csid = headerCsid
+      }
+    }
+
     // 处理消息接收
     const receiveMessage = (e: MessageEvent) => {
-      // 如果没有会话ID且响应头中包含会话ID，则更新会话ID
-      if (!csid && eventSource?.xhr)
-        csid = eventSource.xhr.getResponseHeader('Conversation-Id')
-
       // 忽略空消息和结束标记
       if (e.data.length === 0 || e.data === '[DONE]')
         return
@@ -162,6 +168,7 @@ export function fetchChatStream(
     }
 
     // 添加事件监听器
+    eventSource.addEventListener('open', handleOpen)
     eventSource.addEventListener('message', receiveMessage)
     eventSource.addEventListener('error', handleError)
 

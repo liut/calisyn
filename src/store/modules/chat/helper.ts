@@ -20,20 +20,19 @@ export function getLocalState(): Chat.ChatState {
   if (localState?.history) {
     localState.history = localState.history.map((item: any) => ({
       ...item,
-      csid: item.csid || (item.uuid ? '_' + item.uuid.toString() : ''),
+      csid: item.csid || (item.uuid ? `_${item.uuid.toString()}` : ''),
       uuid: undefined, // 移除旧字段
     }))
   }
   if (localState?.chat) {
     localState.chat = localState.chat.map((item: any) => ({
       ...item,
-      csid: item.csid || (item.uuid ? '_' + item.uuid.toString() : ''),
+      csid: item.csid || (item.uuid ? `_${item.uuid.toString()}` : ''),
       uuid: undefined, // 移除旧字段
     }))
   }
-  if (localState?.active) {
+  if (localState?.active)
     localState.active = localState.active.toString()
-  }
 
   return { ...defaultState(), ...localState }
 }

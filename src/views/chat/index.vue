@@ -59,36 +59,48 @@ interface SSEHandlerOptions {
 }
 
 function createSSEHandler(options: SSEHandlerOptions) {
-  const { message: originalMessage, csid: currentCsid, options: chatOptions, index, regen, signal } = options
+  const { message: originalMessage, csid, options: chatOptions, index, regen, signal } = options
 
   // 状态变量
   let chunks: Chat.MessageChunk[] = []
   let currentMessage = originalMessage
   // 记录上一个 delta（用于去重）
   let lastDelta = ''
+  // 记录原始 csid，用于更新
+  let originalCsid = csid
+  // 当前 csid（从路由获取）
+  let currentCsid = (route.params.csid as string) || chatStore.active || ''
 
   // 处理单条 SSE 消息
   const handleMessage = (data: StreamMessage) => {
-    // 忽略空消息
-    const hasContent = (data.tool_calls && data.tool_calls.length > 0) || data.delta || data.text
-    if (!hasContent) {
+    // 忽略空消息（但允许只有 finishReason 或 title 的消息，用于更新标题等）
+    const hasContent = (data.tool_calls && data.tool_calls.length > 0) || data.delta || data.text || data.finishReason || data.title
+    if (!hasContent)
       return
+
+    // 获取当前最新的 csid（从路由获取）
+    currentCsid = (route.params.csid as string) || chatStore.active || ''
+
+    // 首次收到消息时，如果有新的 csid 则更新（只更新一次）
+    if (originalCsid && data.csid && data.csid !== originalCsid) {
+      chatStore.updateCsid(originalCsid, data.csid)
+      originalCsid = ''
     }
 
     // 处理工具调用数据：创建 tool_call 段落
     if (data.tool_calls && data.tool_calls.length > 0) {
       // 将之前的文本段落标记为已完成
-      chunks = chunks.map(chunk => {
-        if (chunk.type === 'text') {
+      chunks = chunks.map((chunk) => {
+        if (chunk.type === 'text')
           return { ...chunk, loading: false }
-        }
+
         return chunk
       })
 
       const toolCallData = data.tool_calls.map(tc => ({
         id: tc.id || '',
         name: tc.function?.name || '',
-        arguments: tc.function?.arguments || ''
+        arguments: tc.function?.arguments || '',
       }))
 
       // 检查是否已有 tool_call 段落，避免重复创建
@@ -99,15 +111,16 @@ function createSSEHandler(options: SSEHandlerOptions) {
           type: 'tool_call',
           content: '',
           toolCalls: toolCallData,
-          loading: true
+          loading: true,
         }
-      } else {
+      }
+      else {
         // 创建新的工具调用段落
         chunks.push({
           type: 'tool_call',
           content: '',
           toolCalls: toolCallData,
-          loading: true
+          loading: true,
         })
       }
     }
@@ -117,9 +130,9 @@ function createSSEHandler(options: SSEHandlerOptions) {
       const text = data.delta || data.text || ''
 
       // 去重
-      if (text === lastDelta) {
+      if (text === lastDelta)
         return
-      }
+
       lastDelta = text
 
       // 追加到最后一个文本段落或新建
@@ -128,13 +141,14 @@ function createSSEHandler(options: SSEHandlerOptions) {
         chunks[chunks.length - 1] = {
           ...lastChunk,
           content: lastChunk.content + text,
-          loading: true
+          loading: true,
         }
-      } else {
+      }
+      else {
         chunks.push({
           type: 'text',
           content: text,
-          loading: true
+          loading: true,
         })
       }
     }
@@ -180,27 +194,27 @@ function createSSEHandler(options: SSEHandlerOptions) {
       }
       else if (data.finishReason) {
         // 标记工具调用段落和文本段落加载完成
-        chunks = chunks.map(chunk => {
+        chunks = chunks.map((chunk) => {
           return { ...chunk, loading: false }
         })
 
-        // 当 finishReason 为 stop 时更新 csid 并获取标题
+        // 当 finishReason 为 stop 时获取标题
         if (data.finishReason === 'stop') {
-          // 更新 csid
-          if (data.csid) {
-            chatStore.updateCsid(currentCsid, data.csid)
-          }
-
-          // 获取聊天标题
           const finalCsid = data.csid || currentCsid
-          fetchConversationTitle(finalCsid).then((res: any) => {
-            const title = res?.data?.data?.title
-            if (title) {
-              chatStore.updateHistory(finalCsid, { title })
-            }
-          }).catch((err) => {
-            console.warn('Failed to update conversation title:', err)
-          })
+
+          // 优先使用服务端返回的标题，否则调用 API 获取
+          if (data.title) {
+            chatStore.updateHistory(finalCsid, { title: data.title })
+          }
+          else {
+            fetchConversationTitle(finalCsid).then((res: any) => {
+              const title = res?.data?.data?.title
+              if (title)
+                chatStore.updateHistory(finalCsid, { title })
+            }).catch((err) => {
+              console.warn('Failed to update conversation title:', err)
+            })
+          }
         }
         updateChatSome(currentCsid, targetIndex, { loading: false, chunks })
       }
@@ -229,9 +243,9 @@ function createSSEHandler(options: SSEHandlerOptions) {
         signal,
         onMessage: (data: StreamMessage) => {
           const shouldContinue = handleMessage(data)
-          if (shouldContinue) {
+          if (shouldContinue)
             continueRequest = true
-          }
+
           _onMessage?.(data)
         },
       })
@@ -247,7 +261,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
 
 // 未知原因刷新页面，loading 状态不会重置，手动重置
 dataSources.value.forEach((item, index) => {
-  if (item.loading)
+  if (item?.loading)
     updateChatSome(csid.value, index, { loading: false })
 })
 
@@ -256,7 +270,7 @@ function handleSubmit() {
 }
 
 async function onConversation() {
-  let message = prompt.value
+  const message = prompt.value
 
   if (loading.value)
     return
@@ -371,7 +385,7 @@ async function onRegenerate(index: number) {
 
   const { requestOptions } = dataSources.value[index]
 
-  let message = requestOptions?.prompt ?? ''
+  const message = requestOptions?.prompt ?? ''
 
   let options: Chat.ConversationRequest = {}
 
@@ -613,14 +627,14 @@ onUnmounted(() => {
                 <Message
                   v-for="(item, index) of dataSources"
                   :key="index"
-                  :date-time="item.dateTime"
-                  :text="item.text"
-                  :inversion="item.inversion"
-                  :error="item.error"
-                  :loading="item.loading"
-                  :tool-calling="item.toolCalling"
-                  :tool-calls="item.toolCalls"
-                  :chunks="item.chunks"
+                  :date-time="item?.dateTime"
+                  :text="item?.text"
+                  :inversion="item?.inversion"
+                  :error="item?.error"
+                  :loading="item?.loading"
+                  :tool-calling="item?.toolCalling"
+                  :tool-calls="item?.toolCalls"
+                  :chunks="item?.chunks"
                   @regenerate="onRegenerate(index)"
                   @delete="handleDelete(index)"
                 />

@@ -141,3 +141,38 @@ html.dark {
 		}
 	}
 }
+
+// 思考内容样式
+.think-content {
+	animation: fadeIn 0.2s ease;
+	max-height: 400px;
+	overflow-y: auto;
+	
+	&::-webkit-scrollbar {
+		width: 4px;
+	}
+	
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	
+	&::-webkit-scrollbar-thumb {
+		background: #c0b0a0;
+		border-radius: 2px;
+	}
+}
+
+html.dark .think-content::-webkit-scrollbar-thumb {
+	background: #605540;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}

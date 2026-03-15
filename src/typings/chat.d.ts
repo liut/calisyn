@@ -7,7 +7,7 @@ declare namespace Chat {
 	}
 
 	// 消息段落类型
-	type MessageChunkType = 'text' | 'tool_call'
+	type MessageChunkType = 'text' | 'tool_call' | 'think'
 
 	// 消息段落 - 用于流式渲染工具调用和文本的穿插
 	interface MessageChunk {
@@ -15,6 +15,7 @@ declare namespace Chat {
 		content: string      // 文本内容
 		toolCalls?: Tool[]  // 工具调用信息
 		loading?: boolean    // 是否正在加载
+		collapsed?: boolean  // 是否折叠（用于 think 类型）
 	}
 
 	interface Chat {

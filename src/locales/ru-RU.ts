@@ -27,6 +27,8 @@ export default {
     verify: 'Проверить',
     unauthorizedTips: 'Не авторизован, сначала подтвердите свою личность.',
     stopResponding: 'Прекращение отклика',
+    expand: 'Развернуть',
+    collapse: 'Свернуть',
   },
   chat: {
     newChatButton: 'Новый чат',
@@ -52,7 +54,8 @@ export default {
     clearHistoryConfirm: 'Вы уверены, что хотите очистить историю чата?',
     preview: 'Предварительный просмотр',
     showRawText: 'Показать как обычный текст',
-    thinking: 'Думаю...',
+    thinking: 'Процесс мышления',
+    thinkingInProgress: 'Думаю...',
   },
   setting: {
     setting: 'Настройки',

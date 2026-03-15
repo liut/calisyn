@@ -43,7 +43,8 @@ export interface StreamMessage {
   id: string
   csid?: string
   pmid?: string
-  delta: string
+  delta?: string
+  think?: string
   text?: string
   tool_calls?: Array<ToolCall>
   finishReason?: string

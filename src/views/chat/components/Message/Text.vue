@@ -8,6 +8,7 @@ import hljs from 'highlight.js'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
 import { copyToClip } from '@/utils/copy'
+import { SvgIcon } from '@/components/common'
 
 interface Props {
   inversion?: boolean
@@ -21,6 +22,9 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+// 思考段落的折叠状态管理
+const thinkCollapsedStates = ref<Map<number, boolean>>(new Map())
 
 const { isMobile } = useBasicLayout()
 
@@ -144,6 +148,23 @@ function formatArguments(args: string): string {
   }
 }
 
+// 切换思考段落的折叠状态
+function toggleThinkCollapse(index: number, chunk: Chat.MessageChunk) {
+  const currentState = thinkCollapsedStates.value.get(index)
+  // 如果已经有手动设置的状态，则取反；否则使用 chunk 的 collapsed 状态取反
+  const newState = currentState !== undefined ? !currentState : !chunk.collapsed
+  // 创建新的 Map 以触发响应式更新
+  const newMap = new Map(thinkCollapsedStates.value)
+  newMap.set(index, newState)
+  thinkCollapsedStates.value = newMap
+}
+
+// 获取思考段落的折叠状态
+function isThinkCollapsed(index: number, chunk: Chat.MessageChunk): boolean {
+  const manualState = thinkCollapsedStates.value.get(index)
+  return manualState !== undefined ? manualState : !!chunk.collapsed
+}
+
 onMounted(() => {
   addCopyEvents()
 })
@@ -164,8 +185,32 @@ onUnmounted(() => {
         <!-- 使用 chunks 模式渲染 -->
         <template v-if="chunks && chunks.length > 0">
           <div v-for="(chunk, idx) in chunks" :key="idx" class="mb-3">
+            <!-- 思考段落 -->
+            <div v-if="chunk.type === 'think'" class="mb-3">
+              <!-- 思考头部 - 无框，可点击折叠 -->
+              <div 
+                class="think-header inline-flex items-center gap-2 cursor-pointer select-none group"
+                @click="toggleThinkCollapse(idx, chunk)"
+              >
+                <span class="text-sm text-[#b0a090] dark:text-[#6a6258]">
+                  {{ chunk.loading ? (t('chat.thinkingInProgress') || '思考中...') : (t('chat.thinking') || '思考过程') }}
+                </span>
+                <SvgIcon 
+                  :icon="isThinkCollapsed(idx, chunk) ? 'ri:arrow-right-s-line' : 'ri:arrow-down-s-line'" 
+                  class="text-[#c0b0a0] dark:text-[#706860] text-sm group-hover:text-[#8a7a6a] dark:group-hover:text-[#a09078] transition-colors" 
+                />
+              </div>
+              <!-- 思考内容 - 有边框，仅展开时显示 -->
+              <div 
+                v-show="!isThinkCollapsed(idx, chunk)" 
+                class="think-content mt-2 px-3 py-2 text-sm text-[#6a5a4a] dark:text-[#a89878] border border-[#e0d5c8] dark:border-[#4a4538] rounded-lg bg-[#faf8f5] dark:bg-[#2a2618]"
+              >
+                <div class="whitespace-pre-wrap leading-relaxed">{{ chunk.content }}</div>
+              </div>
+            </div>
+
             <!-- 工具调用段落 -->
-            <div v-if="chunk.type === 'tool_call'" class="mb-2 text-sm">
+            <div v-else-if="chunk.type === 'tool_call'" class="mb-2 text-sm">
               <div v-if="chunk.toolCalls && chunk.toolCalls.length > 0">
                 <span
                   v-for="(tc, tcIdx) in chunk.toolCalls"
@@ -173,7 +218,7 @@ onUnmounted(() => {
                   class="inline-flex items-center gap-1 mr-2"
                 >
                   <span class="text-gray-500 font-medium">{{ tc.name }}</span>
-                  <span class="text-green-500">{{ formatArguments(tc.arguments || '') }}</span>
+                  <span class="text-[#4a9a4a] dark:text-[#3a8a3a]">{{ formatArguments(tc.arguments || '') }}</span>
                   <span v-if="chunk.loading" class="text-gray-400 animate-pulse">...</span>
                 </span>
               </div>

@@ -53,7 +53,8 @@ export default {
     clearHistoryConfirm: '確定清除紀錄?',
     preview: '預覽',
     showRawText: '顯示原文',
-    thinking: '思考中...',
+    thinking: '思考過程',
+    thinkingInProgress: '思考中...',
     toolCalling: '工具調用中...',
   },
   setting: {

@@ -66,15 +66,19 @@ function createSSEHandler(options: SSEHandlerOptions) {
   let currentMessage = originalMessage
   // 记录上一个 delta（用于去重）
   let lastDelta = ''
+  // 记录上一个 think（用于去重）
+  let lastThink = ''
   // 记录原始 csid，用于更新
   let originalCsid = csid
   // 当前 csid（从路由获取）
   let currentCsid = (route.params.csid as string) || chatStore.active || ''
+  // 延迟折叠思考内容的定时器
+  let thinkCollapseTimer: ReturnType<typeof setTimeout> | null = null
 
   // 处理单条 SSE 消息
   const handleMessage = (data: StreamMessage) => {
     // 忽略空消息（但允许只有 finishReason 或 title 的消息，用于更新标题等）
-    const hasContent = (data.tool_calls && data.tool_calls.length > 0) || data.delta || data.text || data.finishReason || data.title
+    const hasContent = (data.tool_calls && data.tool_calls.length > 0) || data.delta || data.think || data.text || data.finishReason || data.title
     if (!hasContent)
       return
 
@@ -91,7 +95,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
     if (data.tool_calls && data.tool_calls.length > 0) {
       // 将之前的文本段落标记为已完成
       chunks = chunks.map((chunk) => {
-        if (chunk.type === 'text')
+        if (chunk.type === 'text' || chunk.type === 'think')
           return { ...chunk, loading: false }
 
         return chunk
@@ -125,6 +129,35 @@ function createSSEHandler(options: SSEHandlerOptions) {
       }
     }
 
+    // 处理思考内容
+    if (data.think) {
+      // 去重
+      if (data.think === lastThink)
+        return
+
+      lastThink = data.think
+
+      const lastChunk = chunks[chunks.length - 1]
+      if (lastChunk && lastChunk.type === 'think') {
+        // 追加到现有思考段落，默认保持展开状态（loading 时）
+        chunks[chunks.length - 1] = {
+          ...lastChunk,
+          content: lastChunk.content + data.think,
+          loading: true,
+          collapsed: false,
+        }
+      }
+      else {
+        // 创建新的思考段落，默认展开
+        chunks.push({
+          type: 'think',
+          content: data.think,
+          loading: true,
+          collapsed: false,
+        })
+      }
+    }
+
     // 处理文本
     if (data.delta || data.text) {
       const text = data.delta || data.text || ''
@@ -134,6 +167,54 @@ function createSSEHandler(options: SSEHandlerOptions) {
         return
 
       lastDelta = text
+
+      // 当收到正式回复内容时，将 think 段落标记为加载完成
+      // 并延迟 1.5 秒后折叠，让用户有时间看到思考过程
+      const hasThinkChunk = chunks.some(c => c.type === 'think' && !c.collapsed)
+      if (hasThinkChunk) {
+        // 先标记为加载完成
+        chunks = chunks.map((chunk) => {
+          if (chunk.type === 'think')
+            return { ...chunk, loading: false }
+          return chunk
+        })
+        // 延迟 1.5 秒后折叠
+        if (thinkCollapseTimer)
+          clearTimeout(thinkCollapseTimer)
+        thinkCollapseTimer = setTimeout(() => {
+          chunks = chunks.map((chunk) => {
+            if (chunk.type === 'think')
+              return { ...chunk, collapsed: true }
+            return chunk
+          })
+          // 触发更新以应用折叠状态
+          const targetIndex = index ?? dataSources.value.length - 1
+          const finalText = chunks
+            .filter(c => c.type === 'text')
+            .map(c => c.content)
+            .join('')
+          const toolCalls = chunks
+            .filter(c => c.toolCalls && c.toolCalls.length > 0)
+            .flatMap(c => c.toolCalls || [])
+          const toolCalling = chunks.some(c => c.type === 'tool_call' && c.loading)
+          updateChat(
+            currentCsid,
+            targetIndex,
+            {
+              dateTime: new Date().toLocaleString(),
+              text: finalText,
+              inversion: false,
+              error: false,
+              loading: true,
+              toolCalling,
+              toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+              chunks,
+              conversationOptions: { conversationId: data.csid, parentMessageId: data.id || '' },
+              requestOptions: { prompt: currentMessage, options: { ...chatOptions } },
+            },
+          )
+        }, 1500)
+      }
 
       // 追加到最后一个文本段落或新建
       const lastChunk = chunks[chunks.length - 1]
@@ -193,8 +274,15 @@ function createSSEHandler(options: SSEHandlerOptions) {
         return true
       }
       else if (data.finishReason) {
-        // 标记工具调用段落和文本段落加载完成
+        // 清理延迟折叠定时器
+        if (thinkCollapseTimer) {
+          clearTimeout(thinkCollapseTimer)
+          thinkCollapseTimer = null
+        }
+        // 标记所有段落加载完成，并将思考段落折叠
         chunks = chunks.map((chunk) => {
+          if (chunk.type === 'think')
+            return { ...chunk, loading: false, collapsed: true }
           return { ...chunk, loading: false }
         })
 
@@ -256,6 +344,12 @@ function createSSEHandler(options: SSEHandlerOptions) {
     handleMessage,
     fetch: fetchWithLongReply,
     getChunks: () => chunks,
+    close: () => {
+      if (thinkCollapseTimer) {
+        clearTimeout(thinkCollapseTimer)
+        thinkCollapseTimer = null
+      }
+    },
   }
 }
 
@@ -316,8 +410,9 @@ async function onConversation() {
   )
   scrollToBottom()
 
+  let handler: ReturnType<typeof createSSEHandler> | null = null
   try {
-    const handler = createSSEHandler({
+    handler = createSSEHandler({
       message,
       csid: csid.value,
       options,
@@ -374,6 +469,7 @@ async function onConversation() {
   }
   finally {
     loading.value = false
+    handler?.close()
   }
 }
 
@@ -408,8 +504,9 @@ async function onRegenerate(index: number) {
     },
   )
 
+  let handler: ReturnType<typeof createSSEHandler> | null = null
   try {
-    const handler = createSSEHandler({
+    handler = createSSEHandler({
       message,
       csid: csid.value,
       options,
@@ -452,6 +549,7 @@ async function onRegenerate(index: number) {
   }
   finally {
     loading.value = false
+    handler?.close()
   }
 }
 

@@ -16,6 +16,7 @@ declare namespace Chat {
 		toolCalls?: Tool[]  // 工具调用信息
 		loading?: boolean    // 是否正在加载
 		collapsed?: boolean  // 是否折叠（用于 think 类型）
+		thinkDuration?: number  // 思考持续时间（秒）
 	}
 
 	interface Chat {

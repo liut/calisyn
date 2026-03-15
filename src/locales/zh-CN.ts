@@ -28,6 +28,8 @@ export default {
     unauthorizedTips: '未经授权，请先进行验证。',
     stopResponding: '停止响应',
     done: '完成',
+    expand: '展开',
+    collapse: '收起',
   },
   chat: {
     newChatButton: '新建聊天',
@@ -53,7 +55,8 @@ export default {
     clearHistoryConfirm: '确定清空记录?',
     preview: '预览',
     showRawText: '显示原文',
-    thinking: '思考中...',
+    thinking: '思考过程',
+    thinkingInProgress: '思考中...',
     toolCalling: '工具调用中...',
   },
   setting: {

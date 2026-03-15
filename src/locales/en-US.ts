@@ -28,6 +28,8 @@ export default {
     unauthorizedTips: 'Unauthorized, please verify first.',
     stopResponding: 'Stop Responding',
     done: 'Done',
+    expand: 'Expand',
+    collapse: 'Collapse',
   },
   chat: {
     newChatButton: 'New Chat',
@@ -53,7 +55,8 @@ export default {
     clearHistoryConfirm: 'Are you sure to clear chat history?',
     preview: 'Preview',
     showRawText: 'Show as raw text',
-    thinking: 'Thinking...',
+    thinking: 'Reasoning Process',
+    thinkingInProgress: 'Thinking...',
     toolCalling: 'Tool Calling...',
   },
   setting: {

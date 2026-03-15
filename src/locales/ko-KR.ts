@@ -27,6 +27,8 @@ export default {
     verify: '검증',
     unauthorizedTips: '인증되지 않았습니다. 먼저 확인하십시오.',
     stopResponding: '응답 중지',
+    expand: '펼치기',
+    collapse: '접기',
   },
   chat: {
     newChatButton: '새로운 채팅',
@@ -52,7 +54,8 @@ export default {
     clearHistoryConfirm: '채팅 기록을 삭제하시겠습니까?',
     preview: '미리보기',
     showRawText: '원본 텍스트로 보기',
-    thinking: '생각 중...',
+    thinking: '추론 과정',
+    thinkingInProgress: '생각 중...',
   },
   setting: {
     setting: '설정',

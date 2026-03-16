@@ -27,8 +27,6 @@ export default {
     verify: 'Xác minh',
     unauthorizedTips: 'Không được ủy quyền, vui lòng xác minh trước.',
     stopResponding: 'Dừng phản hồi',
-    expand: 'Mở rộng',
-    collapse: 'Thu gọn',
   },
   chat: {
     newChatButton: 'Tạo hội thoại',
@@ -54,8 +52,9 @@ export default {
     clearHistoryConfirm: 'Bạn có chắc chắn để xóa lịch sử trò chuyện?',
     preview: 'Xem trước',
     showRawText: 'Hiển thị dưới dạng văn bản thô',
-    thinking: 'Quá trình suy luận',
-    thinkingInProgress: 'Đang suy nghĩ...',
+    thinking: 'Đang suy nghĩ...',
+    thinkingWithDuration: 'Đang suy nghĩ {seconds}s',
+    thoughtFor: 'Đã suy nghĩ {seconds}s',
   },
   setting: {
     setting: 'Cài đặt',

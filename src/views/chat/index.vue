@@ -172,7 +172,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
       // 并延迟 1.5 秒后折叠，让用户有时间看到思考过程
       const hasThinkChunk = chunks.some(c => c.type === 'think' && !c.collapsed)
       if (hasThinkChunk) {
-        // 先标记为加载完成
+        // 先标记为加载完成（duration 由组件本地计时器提供，不在这里计算）
         chunks = chunks.map((chunk) => {
           if (chunk.type === 'think')
             return { ...chunk, loading: false }
@@ -495,7 +495,7 @@ async function onRegenerate(index: number) {
     index,
     {
       dateTime: new Date().toLocaleString(),
-      text: '',
+      text: t('chat.thinking'),
       inversion: false,
       error: false,
       loading: true,

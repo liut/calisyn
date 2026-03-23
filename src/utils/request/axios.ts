@@ -16,6 +16,16 @@ service.interceptors.request.use(
       else config.headers[authHeader] = token
       // console.info(config.headers, token)
     }
+    else {
+      // Add token from localStorage if VITE_SITE_TOKEN_KEY is set and not empty
+      const tokenKey = import.meta.env.VITE_SITE_TOKEN_KEY || 'token'
+      const storedToken = localStorage.getItem(tokenKey)
+      if (storedToken) {
+        const headerKey = import.meta.env.VITE_SITE_HEADER_KEY || 'token'
+        config.headers[headerKey] = storedToken
+      }
+    }
+
     return config
   },
   (error) => {

@@ -76,7 +76,7 @@ deploy-to-testing:
 build-for-apps-online:
   stage: build
   variables:
-    GENERATE_SOURCEMAP: true
+    GENERATE_SOURCEMAP: false
     VITE_BASE_PATH: /apps/assistant
   script:
     - pnpm run build

@@ -102,7 +102,6 @@ export function fetchChatStream(
         prompt,
         options: params.options,
         regen,
-        systemMessage: settingStore.systemMessage,
         temperature: settingStore.temperature,
         top_p: settingStore.top_p,
       }),

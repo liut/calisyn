@@ -18,8 +18,6 @@ variables:
   GENERATE_SOURCEMAP: 'false'
   SKIP_PREFLIGHT_CHECK: 'true'
   VITE_API_PATH: /api/m
-  VITE_TOKEN_NAME: oceans-token
-  VITE_AUTH_HEADER: token
 
 before_script:
   - export DATE=$(date '+%Y%m%d')
@@ -65,6 +63,8 @@ deploy-to-testing:
   variables:
     GENERATE_SOURCEMAP: true
     VITE_BASE_PATH: /apps/assistant
+    VITE_SITE_TOKEN_KEY: oceans-token
+    VITE_SITE_HEADER_KEY: token
   script:
     - pnpm run build
     - ssh ${DEPLOY_USER:-sa}@${DEVELOP_HOST:-moon} "test -d /var/www/apps/${NAME} || mkdir /var/www/apps/${NAME}"
@@ -78,6 +78,8 @@ build-for-apps-online:
   variables:
     GENERATE_SOURCEMAP: false
     VITE_BASE_PATH: /apps/assistant
+    VITE_SITE_TOKEN_KEY: oceans-token
+    VITE_SITE_HEADER_KEY: token
   script:
     - pnpm run build
     - ls dist | xargs tar -cvzf apps-${NAME}-${TAG}.tar.gz -C dist

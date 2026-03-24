@@ -23,7 +23,7 @@ export function fetchChatAPI<T = unknown>(
 }
 
 export function fetchChatConfig<T = unknown>() {
-  return post<T>({
+  return get<T>({
     url: '/config',
   })
 }
@@ -95,13 +95,14 @@ export function fetchChatStream(
 
   // 创建并配置SSE连接
   const createEventSource = () => {
-    eventSource = new SSE(`${apiPath}/chat-sse`, {
+    eventSource = new SSE(`${apiPath}/chat`, {
       headers,
       payload: JSON.stringify({
         csid,
         prompt,
         options: params.options,
         regen,
+        stream: true,
         temperature: settingStore.temperature,
         top_p: settingStore.top_p,
       }),
@@ -194,40 +195,6 @@ export function fetchChatStream(
       }
     },
   }
-}
-
-// Deprecated: by fetchChatStream
-export function fetchChatAPIProcess<T = unknown>(
-  params: {
-    prompt: string
-    options?: { conversationId?: string; parentMessageId?: string }
-    signal?: GenericAbortSignal
-    onDownloadProgress?: (progressEvent: AxiosProgressEvent) => void
-  },
-) {
-  const settingStore = useSettingStore()
-  const authStore = useAuthStore()
-
-  let data: Record<string, unknown> = {
-    prompt: params.prompt,
-    options: params.options,
-  }
-
-  if (authStore.isChatGPTAPI) {
-    data = {
-      ...data,
-      systemMessage: settingStore.systemMessage,
-      temperature: settingStore.temperature,
-      top_p: settingStore.top_p,
-    }
-  }
-
-  return post<T>({
-    url: '/chat-process',
-    data,
-    signal: params.signal,
-    onDownloadProgress: params.onDownloadProgress,
-  })
 }
 
 export function fetchSession<T>() {

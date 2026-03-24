@@ -23,6 +23,8 @@ const authStore = useAuthStore()
 
 const isChatGPTAPI = computed<boolean>(() => !!authStore.isChatGPTAPI)
 
+const showConfig = import.meta.env.VITE_SHOW_CONFIG === 'true'
+
 const active = ref('General')
 
 const show = computed({
@@ -57,7 +59,7 @@ const show = computed({
             <Advanced />
           </div>
         </NTabPane>
-        <NTabPane v-if="false" name="Config" tab="Config">
+        <NTabPane v-if="showConfig" name="Config" tab="Config">
           <template #tab>
             <SvgIcon class="text-lg" icon="ri:list-settings-line" />
             <span class="ml-2">{{ $t('setting.config') }}</span>

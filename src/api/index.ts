@@ -1,4 +1,4 @@
-import type { AxiosProgressEvent, GenericAbortSignal } from 'axios'
+import type { GenericAbortSignal } from 'axios'
 import { SSE } from 'sse.js'
 import { get, post } from '@/utils/request'
 import request from '@/utils/request/axios'

@@ -1,7 +1,6 @@
 import type { GenericAbortSignal } from 'axios'
 import { SSE } from 'sse.js'
-import { get, post } from '@/utils/request'
-import request from '@/utils/request/axios'
+import { get, patch, post } from '@/utils/request'
 import { useAuthStore, useSettingStore } from '@/store'
 
 export function authLogout() {
@@ -210,8 +209,8 @@ export function fetchVerify<T>(token: string) {
   })
 }
 
-export function fetchConversationTitle<T = unknown>(csid: string) {
-  return request({
+export function fetchConversationTitle<T>(csid: string) {
+  return patch<T>({
     url: `/conversation/${csid}/title`,
     method: 'PATCH',
   })

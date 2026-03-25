@@ -21,7 +21,7 @@ const emit = defineEmits<Emit>()
 
 const authStore = useAuthStore()
 
-const isChatGPTAPI = computed<boolean>(() => !!authStore.isChatGPTAPI)
+const hasAdvanced = computed<boolean>(() => !!authStore.hasAdvanced)
 
 const showConfig = import.meta.env.VITE_SHOW_CONFIG === 'true'
 
@@ -50,7 +50,7 @@ const show = computed({
             <General />
           </div>
         </NTabPane>
-        <NTabPane v-if="isChatGPTAPI" name="Advanced" tab="Advanced">
+        <NTabPane v-if="hasAdvanced" name="Advanced" tab="Advanced">
           <template #tab>
             <SvgIcon class="text-lg" icon="ri:equalizer-line" />
             <span class="ml-2">{{ $t('setting.advanced') }}</span>

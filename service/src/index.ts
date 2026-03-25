@@ -128,7 +128,9 @@ router.get('/session', async (req, res) => {
     const user = req.cookies[cookieName]
     const AUTH_SECRET_KEY = process.env.AUTH_SECRET_KEY
     const hasAuth = isNotEmptyString(AUTH_SECRET_KEY) // TODO: option for oauth
-    res.send({ status: 'Success', message: '', data: { auth: hasAuth, model: currentModel(), user } })
+    const model = currentModel()
+    const showAdvanced = model === 'ChatGPTAPI'
+    res.send({ status: 'Success', message: '', data: { auth: hasAuth, model, showAdvanced, user } })
   }
   catch (error) {
     res.send({ status: 'Fail', message: error.message, data: null })

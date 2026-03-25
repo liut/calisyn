@@ -20,7 +20,7 @@ const loading = ref(false)
 
 const config = ref<ConfigState>()
 
-const isChatGPTAPI = computed<boolean>(() => !!authStore.isChatGPTAPI)
+const hasAdvanced = computed<boolean>(() => !!authStore.hasAdvanced)
 
 async function fetchConfig() {
   try {
@@ -61,10 +61,10 @@ onMounted(() => {
         </p>
       </div>
       <p>{{ $t("setting.api") }}：{{ config?.apiModel ?? '-' }}</p>
-      <p v-if="isChatGPTAPI">
+      <p v-if="hasAdvanced">
         {{ $t("setting.monthlyUsage") }}：{{ config?.usage ?? '-' }}
       </p>
-      <p v-if="!isChatGPTAPI">
+      <p v-if="!hasAdvanced">
         {{ $t("setting.reverseProxy") }}：{{ config?.reverseProxy ?? '-' }}
       </p>
       <p>{{ $t("setting.timeout") }}：{{ config?.timeoutMs ?? '-' }}</p>

@@ -212,6 +212,5 @@ export function fetchVerify<T>(token: string) {
 export function fetchConversationTitle<T>(csid: string) {
   return patch<T>({
     url: `/conversation/${csid}/title`,
-    method: 'PATCH',
   })
 }

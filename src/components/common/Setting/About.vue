@@ -8,7 +8,8 @@ import { useAuthStore } from '@/store'
 interface ConfigState {
   timeoutMs?: number
   reverseProxy?: string
-  apiModel?: string
+  provider?: string
+  model?: string
   socksProxy?: string
   httpsProxy?: string
   usage?: string
@@ -60,7 +61,8 @@ onMounted(() => {
           {{ $t("setting.stars") }}
         </p>
       </div>
-      <p>{{ $t("setting.api") }}：{{ config?.apiModel ?? '-' }}</p>
+      <p>{{ $t("setting.api") }}：{{ config?.provider ?? '-' }}</p>
+      <p>{{ $t("setting.model") }}：{{ config?.model ?? '-' }}</p>
       <p v-if="hasAdvanced">
         {{ $t("setting.monthlyUsage") }}：{{ config?.usage ?? '-' }}
       </p>

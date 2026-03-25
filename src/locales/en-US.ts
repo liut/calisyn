@@ -73,6 +73,7 @@ export default {
     theme: 'Theme',
     language: 'Language',
     api: 'API',
+    model: 'Model',
     reverseProxy: 'Reverse Proxy',
     timeout: 'Timeout',
     socks: 'Socks',

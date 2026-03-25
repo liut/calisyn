@@ -72,6 +72,7 @@ export default {
     theme: 'Giao diện',
     language: 'Ngôn ngữ',
     api: 'API',
+    model: 'Mô hình',
     reverseProxy: 'Reverse Proxy',
     timeout: 'Timeout',
     socks: 'Socks',

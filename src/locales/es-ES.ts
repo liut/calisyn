@@ -69,6 +69,7 @@ export default {
     theme: 'Tema',
     language: 'Idioma',
     api: 'API',
+    model: 'Modelo',
     reverseProxy: 'Reverse Proxy',
     timeout: 'Tiempo de espera',
     socks: 'Socks',

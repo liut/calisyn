@@ -72,6 +72,7 @@ export default {
     theme: 'Тема',
     language: 'Язык',
     api: 'API',
+    model: 'Модель',
     reverseProxy: 'Обратный прокси-сервер',
     timeout: 'Время ожидания',
     socks: 'Socks',

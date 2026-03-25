@@ -73,6 +73,7 @@ export default {
     theme: '主題',
     language: '語言',
     api: 'API',
+    model: '模型',
     reverseProxy: '反向代理',
     timeout: '逾時',
     socks: 'Socks',

@@ -200,7 +200,7 @@ async function chatConfig() {
     : '-'
   return sendResponse<ModelConfig>({
     type: 'Success',
-    data: { apiModel, reverseProxy, timeoutMs, socksProxy, httpsProxy, usage },
+    data: { provider: apiModel, model, reverseProxy, timeoutMs, socksProxy, httpsProxy, usage },
   })
 }
 
@@ -236,6 +236,10 @@ function currentModel(): ApiModel {
   return apiModel
 }
 
+function currentModelName(): string {
+  return model
+}
+
 export type { ChatContext, ChatMessage }
 
-export { chatReplyProcess, chatConfig, currentModel }
+export { chatReplyProcess, chatConfig, currentModel, currentModelName }

@@ -1,4 +1,5 @@
 import type { ToolDefinition, ToolResult } from './types'
+import type { MCPToolHandler } from './mcp'
 
 // web_fetch 工具定义
 export const webFetchTool: ToolDefinition = {
@@ -137,6 +138,15 @@ class ToolRegistry {
 
   hasTool(name: string): boolean {
     return this.tools.has(name)
+  }
+
+  // 注册 MCP 工具
+  registerMcpTool(handler: MCPToolHandler): void {
+    const name = handler.definition.function.name
+    // 检查是否与内置工具冲突
+    if (this.tools.has(name))
+      throw new Error(`Tool name "${name}" conflicts with existing tool`)
+    this.tools.set(name, { definition: handler.definition, invoke: handler.invoke })
   }
 }
 

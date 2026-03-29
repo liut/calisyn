@@ -2,9 +2,10 @@ import type { ChatMessage, ChatResult, LLMConfig, ProviderType, StreamChunk, Too
 import { createOpenAIProvider } from './openai'
 import { createAnthropicProvider } from './anthropic'
 import { type ToolHandler, toolRegistry } from './tools'
+import { mcpRegistry } from './mcp'
 
 export type { LLMConfig, ChatMessage, ChatResult, StreamChunk, ToolDefinition, ProviderType }
-export { toolRegistry }
+export { toolRegistry, mcpRegistry }
 export type { ToolHandler }
 
 // Provider interface for dynamic dispatch
@@ -186,17 +187,22 @@ export async function* streamChat(
   yield * client.streamChat(messages, tools)
 }
 
-// Get available tools
+// Get available tools (includes both built-in and MCP tools)
 export function getTools(): ToolDefinition[] {
-  return toolRegistry.getTools()
+  return [...toolRegistry.getTools(), ...mcpRegistry.getTools()]
 }
 
-// Invoke a tool by name
+// Invoke a tool by name (supports both built-in and MCP tools)
 export async function invokeTool(
   name: string,
   args: Record<string, unknown>,
 ) {
-  return toolRegistry.invoke(name, args)
+  // Try built-in tools first
+  if (toolRegistry.hasTool(name))
+    return toolRegistry.invoke(name, args)
+
+  // Try MCP tools (format: {serverName}_{toolName})
+  return mcpRegistry.invokeByToolKey(name, args)
 }
 
 // Export config for inspection

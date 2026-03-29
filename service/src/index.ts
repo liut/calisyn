@@ -2,7 +2,7 @@ import express from 'express'
 import cookieParser from 'cookie-parser'
 import type { RequestProps } from './types'
 import type { ChatMessage } from './llm'
-import { getClient, getConfig, getTools, invokeTool, streamChat } from './llm'
+import { getClient, getConfig, getTools, invokeTool, mcpRegistry, streamChat } from './llm'
 import { auth, cookieName } from './middleware/auth'
 import { limiter } from './middleware/limiter'
 import { isNotEmptyString } from './utils/is'
@@ -56,6 +56,9 @@ catch (error: any) {
   process.exit(1)
 }
 
+// Initialize MCP registry (health checks)
+mcpRegistry.initialize()
+
 // POST /api/chat - supports stream parameter
 router.post('/chat', [auth, limiter], async (req, res) => {
   const { csid, prompt, options = {}, systemMessage, stream = false } = req.body as RequestProps
@@ -96,7 +99,7 @@ async function handleSSEChat(req: express.Request, res: express.Response, params
   options?: { conversationId?: string; parentMessageId?: string }
   systemMessage?: string
 }) {
-  const { csid, prompt, options = {}, systemMessage } = params
+  const { csid, prompt, systemMessage } = params
 
   const headers: Record<string, string> = {
     'Cache-Control': 'no-cache',
@@ -287,6 +290,94 @@ router.post('/verify', async (req, res) => {
   }
   catch (error) {
     res.send({ status: 'Fail', message: (error as Error).message, data: null })
+  }
+})
+
+// MCP Server Management Routes
+
+// GET /api/mcp/servers - list all MCP servers
+router.get('/mcp/servers', async (_req, res) => {
+  try {
+    const servers = mcpRegistry.getServers()
+    res.send({ servers })
+  }
+  catch (error: any) {
+    res.send({ type: 'Fail', message: error.message })
+  }
+})
+
+// POST /api/mcp/servers - add a new MCP server
+router.post('/mcp/servers', async (req, res) => {
+  try {
+    const { name, url, transport, headers } = req.body
+
+    if (!name || !url || !transport)
+      throw new Error('Missing required fields: name, url, transport')
+
+    const result = await mcpRegistry.addServer({ name, url, transport, headers })
+    if (!result.success)
+      throw new Error(result.error)
+
+    // MCP tools are registered internally by mcpRegistry
+
+    res.send({ success: true, server: { name, url, transport, toolCount: result.toolCount } })
+  }
+  catch (error: any) {
+    res.send({ success: false, error: error.message })
+  }
+})
+
+// DELETE /api/mcp/servers/:name - remove an MCP server
+router.delete('/mcp/servers/:name', async (req, res) => {
+  try {
+    const { name } = req.params
+    const result = await mcpRegistry.removeServer(name)
+    if (!result.success)
+      throw new Error(result.error)
+
+    res.send({ success: true })
+  }
+  catch (error: any) {
+    res.send({ success: false, error: error.message })
+  }
+})
+
+// GET /api/mcp/servers/:name/tools - list tools for a specific MCP server
+router.get('/mcp/servers/:name/tools', async (req, res) => {
+  try {
+    const { name } = req.params
+    const tools = mcpRegistry.getServerTools(name)
+    res.send({ tools })
+  }
+  catch (error: any) {
+    res.send({ type: 'Fail', message: error.message })
+  }
+})
+
+// POST /api/mcp/tools/call - invoke an MCP tool
+router.post('/mcp/tools/call', async (req, res) => {
+  try {
+    const { serverName, toolName, arguments: args = {} } = req.body
+
+    if (!serverName || !toolName)
+      throw new Error('Missing required fields: serverName, toolName')
+
+    const result = await mcpRegistry.invoke(serverName, toolName, args)
+    res.send(result)
+  }
+  catch (error: any) {
+    res.send({ content: `Error: ${error.message}`, isError: true })
+  }
+})
+
+// GET /api/mcp/tools - list all MCP tools
+router.get('/mcp/tools', async (_req, res) => {
+  try {
+    const tools = mcpRegistry.getMCPTools()
+    res.send({ tools })
+  }
+  catch (error: any) {
+    res.send({ type: 'Fail', message: error.message })
   }
 })
 

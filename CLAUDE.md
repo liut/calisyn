@@ -82,6 +82,7 @@ cd service && pnpm lint     # Backend lint
 ## Key Files
 
 - `vite.config.ts` - Vite config with proxy setup for `/api` and `/auth`
+- `service/README.md` - Backend service documentation (LLM providers, deployment, env vars)
 - `service/src/llm/index.ts` - LLM client factory with multi-provider support
 - `service/src/llm/openai.ts` - OpenAI-compatible provider
 - `service/src/llm/anthropic.ts` - Anthropic Claude provider

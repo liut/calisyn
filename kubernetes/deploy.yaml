@@ -23,21 +23,18 @@ spec:
           ports:
             - containerPort: 3002
           env:
-            - name: OPENAI_API_KEY
+            - name: LLM_PROVIDER
+              value: openai
+            - name: LLM_API_KEY
               value: sk-xxx
-            - name: OPENAI_API_BASE_URL
-              value: 'https://api.openai.com'
-            - name: OPENAI_API_MODEL
-              value: gpt-3.5-turbo
-            - name: API_REVERSE_PROXY
-              value: https://ai.fakeopen.com/api/conversation
+            - name: LLM_BASE_URL
+              value: 'https://api.openai.com/v1'
+            - name: LLM_MODEL
+              value: gpt-4.1
             - name: AUTH_SECRET_KEY
               value: '123456'
-            - name: TIMEOUT_MS
+            - name: LLM_TIMEOUT_MS
               value: '60000'
-            - name: SOCKS_PROXY_HOST
-              value: ''
-            - name: SOCKS_PROXY_PORT
               value: ''
             - name: HTTPS_PROXY
               value: ''

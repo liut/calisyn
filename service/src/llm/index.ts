@@ -55,14 +55,14 @@ function getDefaultBaseURL(provider: ProviderType): string {
 function getDefaultModel(provider: ProviderType): string {
   switch (provider) {
     case 'anthropic':
-      return 'claude-3-haiku-20240307'
+      return 'claude-sonnet-4.5'
     case 'ollama':
       return 'llama3'
     case 'openrouter':
-      return 'openai/gpt-4o'
+      return 'openai/gpt-4.1'
     case 'openai':
     default:
-      return 'gpt-3.5-turbo'
+      return 'gpt-4.1'
   }
 }
 

@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Calisyn is an AI chat application with Vue 3 frontend and Express backend.
 
 - **Frontend**: Vue 3 + Vite + Naive UI + Pinia + Vue Router + Vue I18n + Tailwind CSS
-- **Backend**: Express + AI SDK (supports OpenAI API and reverse proxy)
-- **Node Version**: ^16 || ^18 || ^20
+- **Backend**: Express + Multi-Provider LLM (OpenAI, Anthropic, OpenRouter, Ollama)
+- **Node Version**: >=18
 
 ## Common Commands
 
@@ -50,22 +50,30 @@ cd service && pnpm lint     # Backend lint
 
 - **Entry**: `service/src/index.ts` - Express server on port 3002
 - **API Endpoints**:
-  - `POST /chat-sse` - Chat with Server-Sent Events (streaming)
-  - `POST /chat-process` - Deprecated chat API
-  - `GET /config` - Get ChatGPT config
-  - `GET /session` - Get session info
-  - `POST /verify` - Verify auth token
+  - `POST /api/chat` - Chat with optional streaming (`stream` param)
+  - `POST /api/chat-sse` - Chat with Server-Sent Events (streaming)
+  - `GET /api/config` - Get LLM config (provider, model, timeout)
+  - `GET /api/session` - Get session info
+  - `POST /api/verify` - Verify auth token
+- **LLM Providers** (`service/src/llm/`):
+  - `openai.ts` - OpenAI-compatible (OpenAI, OpenRouter, Ollama)
+  - `anthropic.ts` - Anthropic Claude API
+  - `tools.ts` - Tool registry with `web_fetch` tool (SSRF protected)
+  - `index.ts` - Client factory with provider dispatch
 - **Authentication**: `service/src/middleware/auth.ts` - AUTH_SECRET_KEY based
 - **Rate Limiting**: `service/src/middleware/limiter.ts`
 
 ### Key Environment Variables
 
 **Backend** (`service/.env`):
-- `OPENAI_API_KEY` - Official API key (takes precedence)
-- `OPENAI_ACCESS_TOKEN` - Web API token
+- `LLM_PROVIDER` - Provider type: `openai`, `anthropic`, `openrouter`, `ollama` (default: `openai`)
+- `LLM_API_KEY` - API key (required for OpenAI/Anthropic/OpenRouter)
+- `LLM_BASE_URL` - API base URL (optional, has defaults per provider)
+- `LLM_MODEL` - Model name (optional, has defaults per provider)
+- `LLM_TIMEOUT_MS` - Request timeout in ms (default: 90000)
+- `LLM_TEMPERATURE` - Temperature setting (optional)
 - `AUTH_SECRET_KEY` - Access password
-- `OPENAI_API_MODEL` - Model (default: gpt-3.5-turbo)
-- `API_REVERSE_PROXY` - Reverse proxy for Web API
+- `API_PREFIX` - API path prefix (default: `/api`)
 
 **Frontend** (`.env`):
 - `VITE_API_PROXY_TO` - Backend proxy target (default: http://127.0.0.1:3002)
@@ -74,6 +82,9 @@ cd service && pnpm lint     # Backend lint
 ## Key Files
 
 - `vite.config.ts` - Vite config with proxy setup for `/api` and `/auth`
-- `service/src/chatgpt/index.ts` - ChatGPT client wrapper
+- `service/src/llm/index.ts` - LLM client factory with multi-provider support
+- `service/src/llm/openai.ts` - OpenAI-compatible provider
+- `service/src/llm/anthropic.ts` - Anthropic Claude provider
+- `service/src/llm/tools.ts` - Tool registry with `web_fetch` (SSRF protected)
 - `src/utils/request/axios.ts` - Axios instance with interceptors
 - `src/store/modules/chat/index.ts` - Chat state management

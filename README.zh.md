@@ -40,29 +40,28 @@
 	- [License](#license)
 ## 介绍
 
-支持双模型，提供了两种非官方 `ChatGPT API` 方法
+支持多 Provider 的 AI 聊天应用，支持流式 SSE 响应和工具调用。
 
-| 方式                                          | 免费？ | 可靠性     | 质量 |
-| --------------------------------------------- | ------ | ---------- | ---- |
-| `ChatGPTAPI(gpt-3.5-turbo-0301)`                           | 否     | 可靠       | 相对较笨 |
-| `ChatGPTUnofficialProxyAPI(网页 accessToken)` | 是     | 相对不可靠 | 聪明 |
+| Provider | 说明 |
+| -------- | ---- |
+| `openai` | OpenAI 官方 API (默认) |
+| `anthropic` | Anthropic Claude API |
+| `openrouter` | OpenRouter 聚合 API |
+| `ollama` | 本地 Ollama 模型 |
 
-对比：
-1. `ChatGPTAPI` 使用 `gpt-3.5-turbo` 通过 `OpenAI` 官方 `API` 调用 `ChatGPT`
-2. `ChatGPTUnofficialProxyAPI` 使用非官方代理服务器访问 `ChatGPT` 的后端`API`，绕过`Cloudflare`（依赖于第三方服务器，并且有速率限制）
+**功能特点：**
+- 多 Provider 支持，通过 `LLM_PROVIDER` 环境变量切换
+- SSE 流式响应，支持 `stream` 参数
+- 工具调用 (Tool Calling)，内置 `web_fetch` 工具
+- API 路径可配置 (`API_PREFIX`)
 
-警告：
-1. 你应该首先使用 `API` 方式
-2. 使用 `API` 时，如果网络不通，那是国内被墙了，你需要自建代理，绝对不要使用别人的公开代理，那是危险的。
-3. 使用 `accessToken` 方式时反向代理将向第三方暴露您的访问令牌，这样做应该不会产生任何不良影响，但在使用这种方法之前请考虑风险。
-4. 使用 `accessToken` 时，不管你是国内还是国外的机器，都会使用代理。默认代理为 [pengzhile](https://github.com/pengzhile) 大佬的 `https://ai.fakeopen.com/api/conversation`，这不是后门也不是监听，除非你有能力自己翻过 `CF` 验证，用前请知悉。[社区代理](https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy)（注意：只有这两个是推荐，其他第三方来源，请自行甄别）
-5. 把项目发布到公共网络时，你应该设置 `AUTH_SECRET_KEY` 变量添加你的密码访问权限，你也应该修改 `index.html` 中的 `title`，防止被关键词搜索到。
+**警告：**
+1. 把项目发布到公共网络时，你应该设置 `AUTH_SECRET_KEY` 变量添加你的密码访问权限，你也应该修改 `index.html` 中的 `title`，防止被关键词搜索到。
 
-切换方式：
+**快速切换 Provider：**
 1. 进入 `service/.env.example` 文件，复制内容到 `service/.env` 文件
-2. 使用 `OpenAI API Key` 请填写 `OPENAI_API_KEY` 字段 [(获取 apiKey)](https://platform.openai.com/overview)
-3. 使用 `Web API` 请填写 `OPENAI_ACCESS_TOKEN` 字段 [(获取 accessToken)](https://chat.openai.com/api/auth/session)
-4. 同时存在时以 `OpenAI API Key` 优先
+2. 设置 `LLM_PROVIDER` 为 `openai`、`anthropic`、`openrouter` 或 `ollama`
+3. 填写对应的 `LLM_API_KEY` 和 `LLM_MODEL`
 
 环境变量：
 
@@ -73,7 +72,11 @@
 ```
 
 ## 待实现路线
-[✓] 双模型
+[✓] 多 Provider 支持 (OpenAI, Anthropic, OpenRouter, Ollama)
+
+[✓] SSE 流式响应
+
+[✓] 工具调用 (Tool Calling) + web_fetch
 
 [✓] 多会话储存和上下文逻辑
 
@@ -95,7 +98,7 @@
 
 ### Node
 
-`node` 需要 `^16 || ^18 || ^19` 版本（`node >= 14` 需要安装 [fetch polyfill](https://github.com/developit/unfetch#usage-as-a-polyfill)），使用 [nvm](https://github.com/nvm-sh/nvm) 可管理本地多个 `node` 版本
+`node` 需要 `>=18` 版本，使用 [nvm](https://github.com/nvm-sh/nvm) 可管理本地多个 `node` 版本
 
 ```shell
 node -v
@@ -108,16 +111,22 @@ npm install pnpm -g
 ```
 
 ### 填写密钥
-获取 `Openai Api Key` 或 `accessToken` 并填写本地环境变量 [跳转](#介绍)
+设置 LLM Provider 并填写对应的 API Key [跳转](#介绍)
 
 ```
 # service/.env 文件
 
-# OpenAI API Key - https://platform.openai.com/overview
-OPENAI_API_KEY=
+# LLM Provider: openai, anthropic, openrouter, ollama (默认: openai)
+LLM_PROVIDER=openai
 
-# change this to an `accessToken` extracted from the ChatGPT site's `https://chat.openai.com/api/auth/session` response
-OPENAI_ACCESS_TOKEN=
+# API Key (必填)
+LLM_API_KEY=sk-xxx
+
+# 模型 (可选，有默认值)
+LLM_MODEL=gpt-4o
+
+# API 地址 (可选，有默认值)
+LLM_BASE_URL=https://api.openai.com/v1
 ```
 
 ## 安装依赖
@@ -155,27 +164,19 @@ pnpm dev
 
 ## 环境变量
 
-`API` 可用：
+**LLM Provider 配置：**
 
-- `OPENAI_API_KEY` 和 `OPENAI_ACCESS_TOKEN` 二选一
-- `OPENAI_API_MODEL`  设置模型，可选，默认：`gpt-3.5-turbo`
-- `OPENAI_API_BASE_URL` 设置接口地址，可选，默认：`https://api.openai.com`
-- `OPENAI_API_DISABLE_DEBUG` 设置接口关闭 debug 日志，可选，默认：empty 不关闭
+- `LLM_PROVIDER` Provider 类型：`openai`、`anthropic`、`openrouter`、`ollama`，默认：`openai`
+- `LLM_API_KEY` API 密钥
+- `LLM_MODEL` 模型名称，默认值因 Provider 而异
+- `LLM_BASE_URL` API 地址，默认值因 Provider 而异
+- `LLM_TIMEOUT_MS` 请求超时，单位毫秒，默认：90000
+- `LLM_TEMPERATURE` 温度参数，可选
 
-`ACCESS_TOKEN` 可用：
+**通用配置：**
 
-- `OPENAI_ACCESS_TOKEN`  和 `OPENAI_API_KEY` 二选一，同时存在时，`OPENAI_API_KEY` 优先
-- `API_REVERSE_PROXY` 设置反向代理，可选，默认：`https://ai.fakeopen.com/api/conversation`，[社区](https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy)（注意：只有这两个是推荐，其他第三方来源，请自行甄别）
-
-通用：
-
-- `AUTH_SECRET_KEY` 访问权限密钥，可选
-- `MAX_REQUEST_PER_HOUR` 每小时最大请求次数，可选，默认无限
-- `TIMEOUT_MS` 超时，单位毫秒，可选
-- `SOCKS_PROXY_HOST` 和 `SOCKS_PROXY_PORT` 一起时生效，可选
-- `SOCKS_PROXY_PORT` 和 `SOCKS_PROXY_HOST` 一起时生效，可选
-- `HTTPS_PROXY` 支持 `http`，`https`, `socks5`，可选
-- `ALL_PROXY` 支持 `http`，`https`, `socks5`，可选
+- `AUTH_SECRET_KEY` 访问权限密钥
+- `API_PREFIX` API 路径前缀，默认：`/api`
 
 ## 打包
 
@@ -209,36 +210,23 @@ version: '3'
 
 services:
   app:
-    image: liut7/calisyn # 总是使用 latest ,更新时重新 pull 该 tag 镜像即可
+    image: liut7/calisyn
     ports:
       - 127.0.0.1:3002:3002
     environment:
-      # 二选一
-      OPENAI_API_KEY: sk-xxx
-      # 二选一
-      OPENAI_ACCESS_TOKEN: xxx
-      # API接口地址，可选，设置 OPENAI_API_KEY 时可用
-      OPENAI_API_BASE_URL: xxx
-      # API模型，可选，设置 OPENAI_API_KEY 时可用，https://platform.openai.com/docs/models
-      # gpt-4, gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4-turbo-preview, gpt-4-0125-preview, gpt-4-1106-preview, gpt-4-0314, gpt-4-0613, gpt-4-32k, gpt-4-32k-0314, gpt-4-32k-0613, gpt-3.5-turbo-16k, gpt-3.5-turbo-16k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0301, gpt-3.5-turbo-0613, text-davinci-003, text-davinci-002, code-davinci-002
-      OPENAI_API_MODEL: xxx
-      # 反向代理，可选
-      API_REVERSE_PROXY: xxx
+      # LLM Provider: openai, anthropic, openrouter, ollama
+      LLM_PROVIDER: openai
+      # API 密钥
+      LLM_API_KEY: sk-xxx
+      # 模型，可选
+      LLM_MODEL: gpt-4o
+      # API 地址，可选
+      LLM_BASE_URL: https://api.openai.com/v1
       # 访问权限密钥，可选
       AUTH_SECRET_KEY: xxx
-      # 每小时最大请求次数，可选，默认无限
-      MAX_REQUEST_PER_HOUR: 0
-      # 超时，单位毫秒，可选
-      TIMEOUT_MS: 60000
-      # Socks代理，可选，和 SOCKS_PROXY_PORT 一起时生效
-      SOCKS_PROXY_HOST: xxx
-      # Socks代理端口，可选，和 SOCKS_PROXY_HOST 一起时生效
-      SOCKS_PROXY_PORT: xxx
-      # HTTPS 代理，可选，支持 http，https，socks5
-      HTTPS_PROXY: http://xxx:7890
+      # API 路径前缀，可选，默认 /api
+      API_PREFIX: /api
 ```
-- `OPENAI_API_BASE_URL`  可选，设置 `OPENAI_API_KEY` 时可用
-- `OPENAI_API_MODEL`  可选，设置 `OPENAI_API_KEY` 时可用
 
 #### 防止爬虫抓取
 
@@ -260,23 +248,15 @@ services:
 
 #### Railway 环境变量
 
-| 环境变量名称          | 必填                   | 备注                                                                                               |
-| --------------------- | ---------------------- | -------------------------------------------------------------------------------------------------- |
-| `PORT`                | 必填                   | 默认 `3002`
-| `AUTH_SECRET_KEY`          | 可选                   | 访问权限密钥                                        |
-| `MAX_REQUEST_PER_HOUR`          | 可选                   | 每小时最大请求次数，可选，默认无限                                        |
-| `TIMEOUT_MS`          | 可选                   | 超时时间，单位毫秒                                                                             |
-| `OPENAI_API_KEY`      | `OpenAI API` 二选一    | 使用 `OpenAI API` 所需的 `apiKey` [(获取 apiKey)](https://platform.openai.com/overview)            |
-| `OPENAI_ACCESS_TOKEN` | `Web API` 二选一       | 使用 `Web API` 所需的 `accessToken` [(获取 accessToken)](https://chat.openai.com/api/auth/session) |
-| `OPENAI_API_BASE_URL`   | 可选，`OpenAI API` 时可用 |  `API`接口地址  |
-| `OPENAI_API_MODEL`   | 可选，`OpenAI API` 时可用 |  `API`模型  |
-| `API_REVERSE_PROXY`   | 可选，`Web API` 时可用 | `Web API` 反向代理地址 [详情](https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy)    |
-| `SOCKS_PROXY_HOST`   | 可选，和 `SOCKS_PROXY_PORT` 一起时生效 | Socks代理    |
-| `SOCKS_PROXY_PORT`   | 可选，和 `SOCKS_PROXY_HOST` 一起时生效 | Socks代理端口    |
-| `SOCKS_PROXY_USERNAME`   | 可选，和 `SOCKS_PROXY_HOST` 一起时生效 | Socks代理用户名    |
-| `SOCKS_PROXY_PASSWORD`   | 可选，和 `SOCKS_PROXY_HOST` 一起时生效 | Socks代理密码    |
-| `HTTPS_PROXY`   | 可选 | HTTPS 代理，支持 http，https, socks5    |
-| `ALL_PROXY`   | 可选 | 所有代理 代理，支持 http，https, socks5    |
+| 环境变量名称     | 必填 | 备注                      |
+| ---------------- | ---- | ------------------------- |
+| `PORT`           | 必填 | 默认 `3002`               |
+| `LLM_PROVIDER`   | 必填 | `openai`, `anthropic`, `openrouter`, `ollama` |
+| `LLM_API_KEY`    | 必填 | API 密钥                  |
+| `LLM_MODEL`      | 可选 | 模型名称                  |
+| `LLM_BASE_URL`   | 可选 | API 地址                  |
+| `AUTH_SECRET_KEY`| 可选 | 访问权限密钥              |
+| `API_PREFIX`     | 可选 | API 路径前缀，默认 `/api` |
 
 > 注意: `Railway` 修改环境变量会重新 `Deploy`
 

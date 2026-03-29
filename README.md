@@ -40,36 +40,39 @@
 	- [License](#license)
 ## Introduction
 
-Supports dual models and provides two unofficial `ChatGPT API` methods
+Multi-provider AI chat application with SSE streaming and tool calling support.
 
-| Method                             | Free? | Reliability | Quality |
-| ---------------------------------- | ----- | ----------- | ------- |
-| `ChatGPTAPI(gpt-3.5-turbo-0301)`   | No    | Reliable    | Relatively stupid |
-| `ChatGPTUnofficialProxyAPI(web accessToken)` | Yes   | Relatively unreliable | Smart |
+| Provider | Description |
+| -------- | ----------- |
+| `openai` | OpenAI Official API (default) |
+| `anthropic` | Anthropic Claude API |
+| `openrouter` | OpenRouter Aggregated API |
+| `ollama` | Local Ollama Models |
 
-Comparison:
-1. `ChatGPTAPI` uses `gpt-3.5-turbo` through `OpenAI` official `API` to call `ChatGPT`
-2. `ChatGPTUnofficialProxyAPI` uses unofficial proxy server to access `ChatGPT`'s backend `API`, bypass `Cloudflare` (dependent on third-party servers, and has rate limits)
+**Features:**
+- Multi-provider support, switch via `LLM_PROVIDER` env var
+- SSE streaming responses with `stream` parameter
+- Tool Calling with built-in `web_fetch` tool
+- Configurable API prefix (`API_PREFIX`)
 
-Warnings:
-1. You should first use the `API` method
-2. When using the `API`, if the network is not working, it is blocked in China, you need to build your own proxy, never use someone else's public proxy, which is dangerous.
-3. When using the `accessToken` method, the reverse proxy will expose your access token to third parties. This should not have any adverse effects, but please consider the risks before using this method.
-4. When using `accessToken`, whether you are a domestic or foreign machine, proxies will be used. The default proxy is [pengzhile](https://github.com/pengzhile)'s `https://ai.fakeopen.com/api/conversation`. This is not a backdoor or monitoring unless you have the ability to flip over `CF` verification yourself. Use beforehand acknowledge. [Community Proxy](https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy) (Note: Only these two are recommended, other third-party sources, please identify for yourself)
-5. When publishing the project to public network, you should set the `AUTH_SECRET_KEY` variable to add your password access, you should also modify the `title` in `index. html` to prevent it from being searched by keywords.
+**Warnings:**
+1. When publishing the project to public network, you should set the `AUTH_SECRET_KEY` variable to add your password access, you should also modify the `title` in `index.html` to prevent it from being searched by keywords.
 
-Switching methods:
-1. Enter the `service/.env.example` file, copy the contents to the `service/.env` file
-2. To use `OpenAI API Key`, fill in the `OPENAI_API_KEY` field [(get apiKey)](https://platform.openai.com/overview)
-3. To use `Web API`, fill in the `OPENAI_ACCESS_TOKEN` field [(get accessToken)](https://chat.openai.com/api/auth/session)
-4. `OpenAI API Key` takes precedence when both exist
+**Quick Switch Provider:**
+1. Enter the `service/.env.example` file, copy the contents to `service/.env`
+2. Set `LLM_PROVIDER` to `openai`, `anthropic`, `openrouter`, or `ollama`
+3. Fill in corresponding `LLM_API_KEY` and `LLM_MODEL`
 
 Environment variables:
 
 See all parameter variables [here](#environment-variables)
 
 ## Roadmap
-[✓] Dual models
+[✓] Multi-provider support (OpenAI, Anthropic, OpenRouter, Ollama)
+
+[✓] SSE streaming responses
+
+[✓] Tool Calling + web_fetch
 
 [✓] Multi-session storage and context logic
 
@@ -91,7 +94,7 @@ See all parameter variables [here](#environment-variables)
 
 ### Node
 
-`node` requires version `^16 || ^18 || ^19` (`node >= 14` needs [fetch polyfill](https://github.com/developit/unfetch#usage-as-a-polyfill) installation), use [nvm](https://github.com/nvm-sh/nvm) to manage multiple local `node` versions
+`node` requires version `>=18`, use [nvm](https://github.com/nvm-sh/nvm) to manage multiple local `node` versions
 
 ```shell
 node -v
@@ -104,16 +107,22 @@ npm install pnpm -g
 ```
 
 ### Filling in the Key
-Get `Openai Api Key` or `accessToken` and fill in the local environment variables [Go to Introduction](#introduction)
+Set LLM Provider and fill in the corresponding API Key [Go to Introduction](#introduction)
 
 ```
 # service/.env file
 
-# OpenAI API Key - https://platform.openai.com/overview
-OPENAI_API_KEY=
+# LLM Provider: openai, anthropic, openrouter, ollama (default: openai)
+LLM_PROVIDER=openai
 
-# change this to an `accessToken` extracted from the ChatGPT site's `https://chat.openai.com/api/auth/session` response
-OPENAI_ACCESS_TOKEN=
+# API Key (required)
+LLM_API_KEY=sk-xxx
+
+# Model (optional, has default)
+LLM_MODEL=gpt-4o
+
+# API URL (optional, has default)
+LLM_BASE_URL=https://api.openai.com/v1
 ```
 
 ## Install Dependencies
@@ -151,27 +160,19 @@ pnpm dev
 
 ## Environment Variables
 
-`API` available:
+**LLM Provider Config:**
 
-- `OPENAI_API_KEY` and `OPENAI_ACCESS_TOKEN` choose one
-- `OPENAI_API_MODEL` Set model, optional, default: `gpt-3.5-turbo`
-- `OPENAI_API_BASE_URL` Set interface address, optional, default: `https://api.openai.com`
-- `OPENAI_API_DISABLE_DEBUG` Set interface to close debug logs, optional, default: empty does not close
+- `LLM_PROVIDER` Provider type: `openai`, `anthropic`, `openrouter`, `ollama`, default: `openai`
+- `LLM_API_KEY` API key
+- `LLM_MODEL` Model name, defaults vary by provider
+- `LLM_BASE_URL` API URL, defaults vary by provider
+- `LLM_TIMEOUT_MS` Request timeout in ms, default: 90000
+- `LLM_TEMPERATURE` Temperature setting, optional
 
-`ACCESS_TOKEN` available:
+**Common Config:**
 
-- `OPENAI_ACCESS_TOKEN` and `OPENAI_API_KEY` choose one, `OPENAI_API_KEY` takes precedence when both exist
-- `API_REVERSE_PROXY` Set reverse proxy, optional, default: `https://ai.fakeopen.com/api/conversation`, [Community](https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy) (Note: Only these two are recommended, other third party sources, please identify for yourself)
-
-Common:
-
-- `AUTH_SECRET_KEY` Access permission key, optional
-- `MAX_REQUEST_PER_HOUR` Maximum number of requests per hour, optional, unlimited by default
-- `TIMEOUT_MS` Timeout, unit milliseconds, optional
-- `SOCKS_PROXY_HOST` and `SOCKS_PROXY_PORT` take effect together, optional
-- `SOCKS_PROXY_PORT` and `SOCKS_PROXY_HOST` take effect together, optional
-- `HTTPS_PROXY` Support `http`, `https`, `socks5`, optional
-- `ALL_PROXY` Support `http`, `https`, `socks5`, optional
+- `AUTH_SECRET_KEY` Access permission key
+- `API_PREFIX` API path prefix, default: `/api`
 
 ## Packaging
 
@@ -205,37 +206,23 @@ version: '3'
 
 services:
   app:
-    image: liut7/calisyn # always use latest, pull the tag image again to update
+    image: liut7/calisyn
     ports:
       - 127.0.0.1:3002:3002
     environment:
-      # choose one
-      OPENAI_API_KEY: sk-xxx
-      # choose one
-      OPENAI_ACCESS_TOKEN: xxx
-      # API interface address, optional, available when OPENAI_API_KEY is set
-      OPENAI_API_BASE_URL: xxx
-      # API model, optional, available when OPENAI_API_KEY is set, https://platform.openai.com/docs/models
-      # gpt-4, gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4-turbo-preview, gpt-4-0125-preview, gpt-4-1106-preview, gpt-4-0314, gpt-4-0613, gpt-4-32k, gpt-4-32k-0314, gpt-4-32k-0613, gpt-3.5-turbo-16k, gpt-3.5-turbo-16k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0301, gpt-3.5-turbo-0613, text-davinci-003, text-davinci-002, code-davinci-002
-      OPENAI_API_MODEL: xxx
-      # reverse proxy, optional
-      API_REVERSE_PROXY: xxx
-      # access permission key, optional
+      # LLM Provider: openai, anthropic, openrouter, ollama
+      LLM_PROVIDER: openai
+      # API key
+      LLM_API_KEY: sk-xxx
+      # Model, optional
+      LLM_MODEL: gpt-4o
+      # API URL, optional
+      LLM_BASE_URL: https://api.openai.com/v1
+      # Access permission key, optional
       AUTH_SECRET_KEY: xxx
-      # maximum number of requests per hour, optional, unlimited by default
-      MAX_REQUEST_PER_HOUR: 0
-      # timeout, unit milliseconds, optional
-      TIMEOUT_MS: 60000
-      # Socks proxy, optional, take effect with SOCKS_PROXY_PORT
-      SOCKS_PROXY_HOST: xxx
-      # Socks proxy port, optional, take effect with SOCKS_PROXY_HOST
-      SOCKS_PROXY_PORT: xxx
-      # HTTPS proxy, optional, support http,https,socks5
-      HTTPS_PROXY: http://xxx:7890
+      # API path prefix, optional, default /api
+      API_PREFIX: /api
 ```
-
-- `OPENAI_API_BASE_URL` Optional, available when `OPENAI_API_KEY` is set
-- `OPENAI_API_MODEL` Optional, available when `OPENAI_API_KEY` is set
 
 #### Prevent Crawlers
 
@@ -257,23 +244,15 @@ Fill in the following configuration in the nginx configuration file to prevent c
 
 #### Railway Environment Variables
 
-| Environment variable name | Required | Remarks |
-| --------------------- | ---------------------- | -------------------------------------------------------------------------------------------------- |
-| `PORT`                | Required | Default `3002` |
-| `AUTH_SECRET_KEY`          | Optional | Access permission key                             |
-| `MAX_REQUEST_PER_HOUR`          | Optional | Maximum number of requests per hour, optional, unlimited by default                             |
-| `TIMEOUT_MS`          | Optional | Timeout, unit milliseconds                                                                    |
-| `OPENAI_API_KEY`      | `OpenAI API` choose one | `apiKey` required for `OpenAI API` [(get apiKey)](https://platform.openai.com/overview)           |
-| `OPENAI_ACCESS_TOKEN` | `Web API` choose one | `accessToken` required for `Web API` [(get accessToken)](https://chat.openai.com/api/auth/session) |
-| `OPENAI_API_BASE_URL`   | Optional, available when `OpenAI API` | `API` interface address |
-| `OPENAI_API_MODEL`   | Optional, available when `OpenAI API` | `API` model |
-| `API_REVERSE_PROXY`   | Optional, available when `Web API` | `Web API` reverse proxy address [Details](https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy) |
-| `SOCKS_PROXY_HOST`   | Optional, take effect with `SOCKS_PROXY_PORT` | Socks proxy |
-| `SOCKS_PROXY_PORT`   | Optional, take effect with `SOCKS_PROXY_HOST` | Socks proxy port |
-| `SOCKS_PROXY_USERNAME`   | Optional, take effect with `SOCKS_PROXY_HOST` | Socks proxy username |
-| `SOCKS_PROXY_PASSWORD`   | Optional, take effect with `SOCKS_PROXY_HOST` | Socks proxy password |
-| `HTTPS_PROXY`   | Optional | HTTPS proxy, support http,https, socks5 |
-| `ALL_PROXY`   | Optional | All proxies, support http,https, socks5 |
+| Environment variable | Required | Remarks |
+| ------------------- | -------- | ------- |
+| `PORT`              | Required | Default `3002`               |
+| `LLM_PROVIDER`      | Required | `openai`, `anthropic`, `openrouter`, `ollama` |
+| `LLM_API_KEY`       | Required | API key                       |
+| `LLM_MODEL`         | Optional | Model name                    |
+| `LLM_BASE_URL`      | Optional | API URL                       |
+| `AUTH_SECRET_KEY`   | Optional | Access permission key         |
+| `API_PREFIX`        | Optional | API path prefix, default `/api` |
 
 > Note: Modifying environment variables on `Railway` will re-`Deploy`
 

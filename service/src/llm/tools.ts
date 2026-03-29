@@ -1,3 +1,4 @@
+import { pow, sqrt } from 'mathjs'
 import type { ToolDefinition, ToolResult } from './types'
 import type { MCPToolHandler } from './mcp'
 
@@ -29,8 +30,6 @@ export async function invokeCalculate(
   a: number,
   b?: number,
 ): Promise<ToolResult> {
-  const { sqrt, pow } = await import('mathjs')
-
   try {
     let result: number
     switch (operation) {
@@ -44,12 +43,20 @@ export async function invokeCalculate(
         result = a * (b ?? 1)
         break
       case 'divide':
-        result = a / (b ?? 1)
+        if (b === undefined)
+          return { content: 'Error: divide requires b', isError: true }
+        if (b === 0)
+          return { content: 'Error: division by zero', isError: true }
+        result = a / b
         break
       case 'pow':
-        result = pow(a, b ?? 2)
+        if (b === undefined)
+          return { content: 'Error: pow requires b', isError: true }
+        result = pow(a, b)
         break
       case 'sqrt':
+        if (a < 0)
+          return { content: 'Error: cannot calculate sqrt of negative number', isError: true }
         result = sqrt(a)
         break
       default:

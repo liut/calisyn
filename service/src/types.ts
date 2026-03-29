@@ -1,12 +1,9 @@
-import type { FetchFn } from 'chatgpt'
-
 export interface RequestProps {
   csid?: string
   prompt: string
   options?: ChatContext
-  systemMessage: string
-  temperature?: number
-  top_p?: number
+  systemMessage?: string
+  stream?: boolean
 }
 
 export interface ChatContext {
@@ -14,17 +11,8 @@ export interface ChatContext {
   parentMessageId?: string
 }
 
-export interface ChatGPTUnofficialProxyAPIOptions {
-  accessToken: string
-  apiReverseProxyUrl?: string
-  model?: string
-  debug?: boolean
-  headers?: Record<string, string>
-  fetch?: FetchFn
-}
-
 export interface ModelConfig {
-  provider?: ApiModel
+  provider?: string
   model?: string
   reverseProxy?: string
   timeoutMs?: number
@@ -32,8 +20,6 @@ export interface ModelConfig {
   httpsProxy?: string
   usage?: string
 }
-
-export type ApiModel = 'ChatGPTAPI' | 'ChatGPTUnofficialProxyAPI' | undefined
 
 export interface User {
   uid?: string

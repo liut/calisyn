@@ -1,3 +1,27 @@
+## v2.12.0
+
+`2026-03-30`
+
+## Frontend
+
+### Feature
+- 多场景 Logo 定制 — `VITE_APP_LOGO` 支持外部 URL，兼容部署路径
+- 思考推理展示 — 折叠式 UI，含耗时追踪
+- 工具调用展示 — SSE 消息渲染增强，样式化工具框
+- 会话标题自动生成
+- Vitest 测试框架 — 含 SSE 连接测试
+
+## Backend
+
+### Feature
+- MCP Client Registry — 动态 MCP 服务器管理（streamable/SSE/stdio），工具名格式 `{serverName}_{toolName}`
+- 多 Provider LLM — OpenAI/Anthropic/OpenRouter/Ollama 抽象层
+- 计算工具 — mathjs 提供安全计算能力（除零保护、负数平方根防护）
+
+### Enhancement
+- `apiModel` → `provider`，`/config` 新增 `model` 字段
+- Bearer Token 认证支持
+
 ## v2.11.1
 
 `2023-10-11`

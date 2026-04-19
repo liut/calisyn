@@ -140,16 +140,57 @@ function escapeBrackets(text: string) {
 function formatArguments(args: string): string {
   try {
     const parsed = JSON.parse(args)
-    // 转换为更友好的显示格式: key: value
-    const parts: string[] = []
-    for (const [key, value] of Object.entries(parsed))
-      parts.push(`${key}: ${value}`)
-
-    return parts.join(', ')
+    return formatValue(parsed)
   }
   catch {
     return args
   }
+}
+
+// 递归格式化值，支持嵌套对象
+function formatValue(value: unknown, indent = 0): string {
+  if (value === null || value === undefined)
+    return String(value)
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+    return String(value)
+
+  if (Array.isArray(value)) {
+    if (value.length === 0)
+      return '[]'
+    const items = value.map(item => formatValue(item, indent + 1))
+    if (indent === 0 || items.every(item => !item.includes('\n') && item.length < 30)) {
+      return `[${items.join(', ')}]`
+    }
+    return items.map(item => indent > 0 ? '  '.repeat(indent) + '- ' + item : item).join('\n')
+  }
+
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>)
+    if (entries.length === 0)
+      return '{}'
+
+    const formattedEntries = entries.map(([key, val]) => {
+      const formattedVal = formatValue(val, indent + 1)
+      if (typeof val === 'object' && val !== null) {
+        // 嵌套对象显示为 key: {...} 或多行列出
+        if (formattedVal.includes('\n')) {
+          return `${key}:\n${formattedVal}`
+        }
+        return `${key}: ${formattedVal}`
+      }
+      return `${key}: ${formattedVal}`
+    })
+
+    if (formattedEntries.length === 1 && !formattedEntries[0].includes('\n')) {
+      return formattedEntries[0]
+    }
+
+    const prefix = indent > 0 ? '  '.repeat(indent) : ''
+    return formattedEntries.map(entry => `${prefix}${entry}`).join(', ')
+  }
+
+  return String(value)
 }
 
 // 切换思考段落的折叠状态

@@ -159,10 +159,10 @@ function formatValue(value: unknown, indent = 0): string {
     if (value.length === 0)
       return '[]'
     const items = value.map(item => formatValue(item, indent + 1))
-    if (indent === 0 || items.every(item => !item.includes('\n') && item.length < 30)) {
+    if (indent === 0 || items.every(item => !item.includes('\n') && item.length < 30))
       return `[${items.join(', ')}]`
-    }
-    return items.map(item => indent > 0 ? '  '.repeat(indent) + '- ' + item : item).join('\n')
+
+    return items.map(item => indent > 0 ? `${'  '.repeat(indent)}- ${item}` : item).join('\n')
   }
 
   if (typeof value === 'object') {
@@ -174,17 +174,16 @@ function formatValue(value: unknown, indent = 0): string {
       const formattedVal = formatValue(val, indent + 1)
       if (typeof val === 'object' && val !== null) {
         // 嵌套对象显示为 key: {...} 或多行列出
-        if (formattedVal.includes('\n')) {
+        if (formattedVal.includes('\n'))
           return `${key}:\n${formattedVal}`
-        }
+
         return `${key}: ${formattedVal}`
       }
       return `${key}: ${formattedVal}`
     })
 
-    if (formattedEntries.length === 1 && !formattedEntries[0].includes('\n')) {
+    if (formattedEntries.length === 1 && !formattedEntries[0].includes('\n'))
       return formattedEntries[0]
-    }
 
     const prefix = indent > 0 ? '  '.repeat(indent) : ''
     return formattedEntries.map(entry => `${prefix}${entry}`).join(', ')

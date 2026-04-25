@@ -87,8 +87,17 @@ export function fetchChatStream(
   const headers: { [key: string]: string } = { 'Content-Type': 'application/json' }
   const settingStore = useSettingStore()
   const token = useAuthStore().token
-  if (token)
+  if (token) {
     headers.Authorization = `Bearer ${token}`
+  }
+  else {
+    const tokenKey = import.meta.env.VITE_SITE_TOKEN_KEY || 'token'
+    const storedToken = localStorage.getItem(tokenKey)
+    if (storedToken) {
+      const headerKey = import.meta.env.VITE_SITE_HEADER_KEY || 'token'
+      headers[headerKey] = storedToken
+    }
+  }
 
   const apiPath = import.meta.env.VITE_API_PATH || '/api'
 

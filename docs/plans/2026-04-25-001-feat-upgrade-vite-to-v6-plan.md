@@ -114,7 +114,7 @@ worker.plugins: () => [...]
 
   resolve: {
     conditions: [...defaultClientConditions],
-  }
+  };
   ```
 - [ ] 检查 Sass 配置是否需要 `css.preprocessorOptions.sass.api`
 

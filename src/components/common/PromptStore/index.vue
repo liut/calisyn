@@ -1,12 +1,12 @@
 <script setup lang='ts'>
 import type { DataTableColumns } from 'naive-ui'
-import { computed, h, ref, watch } from 'vue'
 import { NButton, NCard, NDataTable, NDivider, NInput, NList, NListItem, NModal, NPopconfirm, NSpace, NTabPane, NTabs, NThing, useMessage } from 'naive-ui'
-import PromptRecommend from '../../../assets/recommend.json'
-import { SvgIcon } from '..'
-import { usePromptStore } from '@/store'
+import { computed, h, ref, watch } from 'vue'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
+import { usePromptStore } from '@/store'
+import { SvgIcon } from '..'
+import PromptRecommend from '../../../assets/recommend.json'
 
 interface DataProps {
   renderKey: string
@@ -61,7 +61,7 @@ const modalMode = ref('')
 const tempModifiedItem = ref<any>({})
 
 // 添加修改导入都使用一个Modal, 临时修改内容占用tempPromptKey,切换状态前先将内容都清楚
-const changeShowModal = (mode: 'add' | 'modify' | 'local_import', selected = { key: '', value: '' }) => {
+function changeShowModal(mode: 'add' | 'modify' | 'local_import', selected = { key: '', value: '' }) {
   if (mode === 'add') {
     tempPromptKey.value = ''
     tempPromptValue.value = ''
@@ -82,7 +82,7 @@ const changeShowModal = (mode: 'add' | 'modify' | 'local_import', selected = { k
 // 在线导入相关
 const downloadURL = ref('')
 const downloadDisabled = computed(() => downloadURL.value.trim().length < 1)
-const setDownloadURL = (url: string) => {
+function setDownloadURL(url: string) {
   downloadURL.value = url
 }
 
@@ -90,7 +90,7 @@ const setDownloadURL = (url: string) => {
 const inputStatus = computed (() => tempPromptKey.value.trim().length < 1 || tempPromptValue.value.trim().length < 1)
 
 // Prompt模板相关操作
-const addPromptTemplate = () => {
+function addPromptTemplate() {
   for (const i of promptList.value) {
     if (i.key === tempPromptKey.value) {
       message.error(t('store.addRepeatTitleTips'))
@@ -106,7 +106,7 @@ const addPromptTemplate = () => {
   changeShowModal('add')
 }
 
-const modifyPromptTemplate = () => {
+function modifyPromptTemplate() {
   let index = 0
 
   // 通过临时索引把待修改项摘出来
@@ -135,19 +135,19 @@ const modifyPromptTemplate = () => {
   changeShowModal('modify')
 }
 
-const deletePromptTemplate = (row: { key: string; value: string }) => {
+function deletePromptTemplate(row: { key: string, value: string }) {
   promptList.value = [
-    ...promptList.value.filter((item: { key: string; value: string }) => item.key !== row.key),
+    ...promptList.value.filter((item: { key: string, value: string }) => item.key !== row.key),
   ] as never
   message.success(t('common.deleteSuccess'))
 }
 
-const clearPromptTemplate = () => {
+function clearPromptTemplate() {
   promptList.value = []
   message.success(t('common.clearSuccess'))
 }
 
-const importPromptTemplate = (from = 'online') => {
+function importPromptTemplate(from = 'online') {
   try {
     const jsonData = JSON.parse(tempPromptValue.value)
     let key = ''
@@ -196,7 +196,7 @@ const importPromptTemplate = (from = 'online') => {
 }
 
 // 模板导出
-const exportPromptTemplate = () => {
+function exportPromptTemplate() {
   exportLoading.value = true
   const jsonDataStr = JSON.stringify(promptList.value)
   const blob = new Blob([jsonDataStr], { type: 'application/json' })
@@ -210,7 +210,7 @@ const exportPromptTemplate = () => {
 }
 
 // 模板在线导入
-const downloadPromptTemplate = async () => {
+async function downloadPromptTemplate() {
   try {
     importLoading.value = true
     const response = await fetch(downloadURL.value)
@@ -218,7 +218,7 @@ const downloadPromptTemplate = async () => {
     if ('key' in jsonData[0] && 'value' in jsonData[0])
       tempPromptValue.value = JSON.stringify(jsonData)
     if ('act' in jsonData[0] && 'prompt' in jsonData[0]) {
-      const newJsonData = jsonData.map((item: { act: string; prompt: string }) => {
+      const newJsonData = jsonData.map((item: { act: string, prompt: string }) => {
         return {
           key: item.act,
           value: item.prompt,
@@ -239,10 +239,10 @@ const downloadPromptTemplate = async () => {
 }
 
 // 移动端自适应相关
-const renderTemplate = () => {
+function renderTemplate() {
   const [keyLimit, valueLimit] = isMobile.value ? [10, 30] : [15, 50]
 
-  return promptList.value.map((item: { key: string; value: string }) => {
+  return promptList.value.map((item: { key: string, value: string }) => {
     return {
       renderKey: item.key.length <= keyLimit ? item.key : `${item.key.substring(0, keyLimit)}...`,
       renderValue: item.value.length <= valueLimit ? item.value : `${item.value.substring(0, valueLimit)}...`,
@@ -255,12 +255,13 @@ const renderTemplate = () => {
 const pagination = computed(() => {
   const [pageSize, pageSlot] = isMobile.value ? [6, 5] : [7, 15]
   return {
-    pageSize, pageSlot,
+    pageSize,
+    pageSlot,
   }
 })
 
 // table相关
-const createColumns = (): DataTableColumns<DataProps> => {
+function createColumns(): DataTableColumns<DataProps> {
   return [
     {
       title: t('store.title'),
@@ -286,8 +287,7 @@ const createColumns = (): DataTableColumns<DataProps> => {
               onClick: () => changeShowModal('modify', row),
             },
             { default: () => t('common.edit') },
-          ),
-          h(
+          ), h(
             NButton,
             {
               tertiary: true,
@@ -296,8 +296,7 @@ const createColumns = (): DataTableColumns<DataProps> => {
               onClick: () => deletePromptTemplate(row),
             },
             { default: () => t('common.delete') },
-          ),
-          ],
+          )],
         })
       },
     },

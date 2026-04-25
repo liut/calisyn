@@ -1,16 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // 创建一个模拟的 request 对象
-const createMockRequest = () => ({
-  get: vi.fn(),
-  post: vi.fn(),
-  patch: vi.fn(),
-  put: vi.fn(),
-  interceptors: {
-    request: { use: vi.fn() },
-    response: { use: vi.fn() },
-  },
-})
+function createMockRequest() {
+  return {
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    put: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() },
+    },
+  }
+}
 
 // 直接测试 http 函数的逻辑
 describe('request/index.ts - HTTP method routing', () => {

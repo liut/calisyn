@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { defineComponent, h } from 'vue'
 import {
   NDialogProvider,
   NLoadingBarProvider,
@@ -10,6 +9,7 @@ import {
   useMessage,
   useNotification,
 } from 'naive-ui'
+import { defineComponent, h } from 'vue'
 
 function registerNaiveTools() {
   window.$loadingBar = useLoadingBar()

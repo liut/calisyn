@@ -1,9 +1,9 @@
 <script setup lang='ts'>
-import { computed } from 'vue'
 import { NInput, NPopconfirm, NScrollbar } from 'naive-ui'
+import { computed } from 'vue'
 import { SvgIcon } from '@/components/common'
-import { useAppStore, useChatStore } from '@/store'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
+import { useAppStore, useChatStore } from '@/store'
 import { debounce } from '@/utils/functions/debounce'
 
 const { isMobile } = useBasicLayout()

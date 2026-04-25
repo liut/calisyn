@@ -1,7 +1,7 @@
 <script setup lang='ts'>
-import { computed } from 'vue'
 import type { PopoverPlacement } from 'naive-ui'
 import { NTooltip } from 'naive-ui'
+import { computed } from 'vue'
 import Button from './Button.vue'
 
 interface Props {

@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
-import { NButton, NInput, NPopconfirm, NSelect, useMessage } from 'naive-ui'
 import type { Language, Theme } from '@/store/modules/app/helper'
-import { SvgIcon } from '@/components/common'
-import { useAppStore, useUserStore } from '@/store'
 import type { UserInfo } from '@/store/modules/user/helper'
-import { getCurrentDate } from '@/utils/functions'
-import { useBasicLayout } from '@/hooks/useBasicLayout'
+import { NButton, NInput, NPopconfirm, NSelect, useMessage } from 'naive-ui'
+import { computed, ref } from 'vue'
 import { authLogout } from '@/api'
+import { SvgIcon } from '@/components/common'
+import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
+import { useAppStore, useUserStore } from '@/store'
+import { getCurrentDate } from '@/utils/functions'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -36,7 +36,7 @@ const language = computed({
   },
 })
 
-const themeOptions: { label: string; key: Theme; icon: string }[] = [
+const themeOptions: { label: string, key: Theme, icon: string }[] = [
   {
     label: 'Auto',
     key: 'auto',
@@ -54,7 +54,7 @@ const themeOptions: { label: string; key: Theme; icon: string }[] = [
   },
 ]
 
-const languageOptions: { label: string; key: Language; value: Language }[] = [
+const languageOptions: { label: string, key: Language, value: Language }[] = [
   { label: 'English', key: 'en-US', value: 'en-US' },
   { label: 'Español', key: 'es-ES', value: 'es-ES' },
   { label: '한국어', key: 'ko-KR', value: 'ko-KR' },
@@ -107,7 +107,7 @@ function importData(event: Event): void {
       ms.success(t('common.success'))
       location.reload()
     }
-    catch (error) {
+    catch {
       ms.error(t('common.invalidFileFormat'))
     }
   }

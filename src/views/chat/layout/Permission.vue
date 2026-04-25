@@ -1,9 +1,9 @@
 <script setup lang='ts'>
-import { computed, ref } from 'vue'
 import { NButton, NInput, NModal, useMessage } from 'naive-ui'
+import { computed, ref } from 'vue'
 import { fetchVerify } from '@/api'
-import { useAuthStore } from '@/store'
 import Icon403 from '@/icons/403.vue'
+import { useAuthStore } from '@/store'
 
 interface Props {
   visible: boolean

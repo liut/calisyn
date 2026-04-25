@@ -1,7 +1,8 @@
-import path from 'path'
 import type { PluginOption } from 'vite'
-import { defineConfig, loadEnv } from 'vite'
+import path from 'node:path'
+import process from 'node:process'
 import vue from '@vitejs/plugin-vue'
+import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 function setupPlugins(env: ImportMetaEnv): PluginOption[] {
@@ -22,7 +23,7 @@ function setupPlugins(env: ImportMetaEnv): PluginOption[] {
 }
 
 export default defineConfig((env) => {
-  const viteEnv = loadEnv(env.mode, process.cwd()) as unknown as ImportMetaEnv
+  const viteEnv = loadEnv(env.mode, import.meta.dirname) as unknown as ImportMetaEnv
   const apiProxyTo = viteEnv.VITE_API_PROXY_TO || 'http://127.0.0.1:3002'
 
   return {

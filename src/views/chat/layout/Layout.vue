@@ -1,11 +1,11 @@
 <script setup lang='ts'>
-import { computed } from 'vue'
 import { NLayout, NLayoutContent } from 'naive-ui'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import Sider from './sider/index.vue'
-import Permission from './Permission.vue'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { useAppStore, useAuthStore, useChatStore } from '@/store'
+import Permission from './Permission.vue'
+import Sider from './sider/index.vue'
 
 const router = useRouter()
 const appStore = useAppStore()

@@ -90,7 +90,7 @@ watch(
       <main class="flex flex-col flex-1 min-h-0">
         <div class="p-4">
           <NButton dashed block @click="handleAdd">
-            {{ $t('chat.newChatButton') }}
+            {{ t('chat.newChatButton') }}
           </NButton>
         </div>
         <div class="flex-1 min-h-0 pb-4 overflow-hidden">
@@ -99,7 +99,7 @@ watch(
         <div class="flex items-center p-4 space-x-4">
           <div v-if="false" class="flex-1">
             <NButton block @click="show = true">
-              {{ $t('store.siderButton') }}
+              {{ t('store.siderButton') }}
             </NButton>
           </div>
           <NButton v-if="false" @click="handleClearAll">

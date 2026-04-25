@@ -2,6 +2,7 @@
 import { NModal, NTabPane, NTabs } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { SvgIcon } from '@/components/common'
+import { t } from '@/locales'
 import { useAuthStore } from '@/store'
 import About from './About.vue'
 import Advanced from './Advanced.vue'
@@ -44,7 +45,7 @@ const show = computed({
         <NTabPane name="General" tab="General">
           <template #tab>
             <SvgIcon class="text-lg" icon="ri:file-user-line" />
-            <span class="ml-2">{{ $t('setting.general') }}</span>
+            <span class="ml-2">{{ t('setting.general') }}</span>
           </template>
           <div class="min-h-[100px]">
             <General />
@@ -53,7 +54,7 @@ const show = computed({
         <NTabPane v-if="hasAdvanced" name="Advanced" tab="Advanced">
           <template #tab>
             <SvgIcon class="text-lg" icon="ri:equalizer-line" />
-            <span class="ml-2">{{ $t('setting.advanced') }}</span>
+            <span class="ml-2">{{ t('setting.advanced') }}</span>
           </template>
           <div class="min-h-[100px]">
             <Advanced />
@@ -62,7 +63,7 @@ const show = computed({
         <NTabPane v-if="showConfig" name="Config" tab="Config">
           <template #tab>
             <SvgIcon class="text-lg" icon="ri:list-settings-line" />
-            <span class="ml-2">{{ $t('setting.config') }}</span>
+            <span class="ml-2">{{ t('setting.config') }}</span>
           </template>
           <About />
         </NTabPane>

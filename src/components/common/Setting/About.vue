@@ -2,6 +2,7 @@
 import { NSpin } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { fetchChatConfig } from '@/api'
+import { t } from '@/locales'
 import { useAuthStore } from '@/store'
 import pkg from '../../../../package.json'
 
@@ -47,7 +48,7 @@ onMounted(() => {
       </h2>
       <div class="p-2 space-y-2 rounded-md bg-neutral-100 dark:bg-neutral-700">
         <p>
-          {{ $t("setting.openSource") }}
+          {{ t("setting.openSource") }}
           <a
             class="text-blue-600 dark:text-blue-500"
             href="https://github.com/liut/calisyn"
@@ -55,23 +56,23 @@ onMounted(() => {
           >
             GitHub
           </a>
-          {{ $t("setting.freeMIT") }}
+          {{ t("setting.freeMIT") }}
         </p>
         <p>
-          {{ $t("setting.stars") }}
+          {{ t("setting.stars") }}
         </p>
       </div>
-      <p>{{ $t("setting.api") }}：{{ config?.provider ?? '-' }}</p>
-      <p>{{ $t("setting.model") }}：{{ config?.model ?? '-' }}</p>
+      <p>{{ t("setting.api") }}：{{ config?.provider ?? '-' }}</p>
+      <p>{{ t("setting.model") }}：{{ config?.model ?? '-' }}</p>
       <p v-if="hasAdvanced">
-        {{ $t("setting.monthlyUsage") }}：{{ config?.usage ?? '-' }}
+        {{ t("setting.monthlyUsage") }}：{{ config?.usage ?? '-' }}
       </p>
       <p v-if="!hasAdvanced">
-        {{ $t("setting.reverseProxy") }}：{{ config?.reverseProxy ?? '-' }}
+        {{ t("setting.reverseProxy") }}：{{ config?.reverseProxy ?? '-' }}
       </p>
-      <p>{{ $t("setting.timeout") }}：{{ config?.timeoutMs ?? '-' }}</p>
-      <p>{{ $t("setting.socks") }}：{{ config?.socksProxy ?? '-' }}</p>
-      <p>{{ $t("setting.httpsProxy") }}：{{ config?.httpsProxy ?? '-' }}</p>
+      <p>{{ t("setting.timeout") }}：{{ config?.timeoutMs ?? '-' }}</p>
+      <p>{{ t("setting.socks") }}：{{ config?.socksProxy ?? '-' }}</p>
+      <p>{{ t("setting.httpsProxy") }}：{{ config?.httpsProxy ?? '-' }}</p>
     </div>
   </NSpin>
 </template>

@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
-import { NButton, NInput, NPopconfirm, NSelect, useMessage } from 'naive-ui'
 import type { Language, Theme } from '@/store/modules/app/helper'
-import { SvgIcon } from '@/components/common'
-import { useAppStore, useUserStore } from '@/store'
 import type { UserInfo } from '@/store/modules/user/helper'
-import { getCurrentDate } from '@/utils/functions'
-import { useBasicLayout } from '@/hooks/useBasicLayout'
+import { NButton, NInput, NPopconfirm, NSelect, useMessage } from 'naive-ui'
+import { computed, ref } from 'vue'
 import { authLogout } from '@/api'
+import { SvgIcon } from '@/components/common'
+import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
+import { useAppStore, useUserStore } from '@/store'
+import { getCurrentDate } from '@/utils/functions'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -36,7 +36,7 @@ const language = computed({
   },
 })
 
-const themeOptions: { label: string; key: Theme; icon: string }[] = [
+const themeOptions: { label: string, key: Theme, icon: string }[] = [
   {
     label: 'Auto',
     key: 'auto',
@@ -54,7 +54,7 @@ const themeOptions: { label: string; key: Theme; icon: string }[] = [
   },
 ]
 
-const languageOptions: { label: string; key: Language; value: Language }[] = [
+const languageOptions: { label: string, key: Language, value: Language }[] = [
   { label: 'English', key: 'en-US', value: 'en-US' },
   { label: 'Español', key: 'es-ES', value: 'es-ES' },
   { label: '한국어', key: 'ko-KR', value: 'ko-KR' },
@@ -107,7 +107,7 @@ function importData(event: Event): void {
       ms.success(t('common.success'))
       location.reload()
     }
-    catch (error) {
+    catch {
       ms.error(t('common.invalidFileFormat'))
     }
   }
@@ -130,44 +130,44 @@ function handleImportButtonClick(): void {
   <div class="p-4 space-y-5 min-h-[200px]">
     <div class="space-y-6">
       <div v-if="false" class="flex items-center space-x-4">
-        <span class="flex-shrink-0 w-[100px]">{{ $t('setting.avatarLink') }}</span>
+        <span class="flex-shrink-0 w-[100px]">{{ t('setting.avatarLink') }}</span>
         <div class="flex-1">
           <NInput v-model:value="avatar" placeholder="" />
         </div>
         <NButton v-if="false" size="tiny" text type="primary" @click="updateUserInfo({ avatar })">
-          {{ $t('common.save') }}
+          {{ t('common.save') }}
         </NButton>
       </div>
       <div v-if="false" class="flex items-center space-x-4">
-        <span class="flex-shrink-0 w-[100px]">{{ $t('setting.name') }}</span>
+        <span class="flex-shrink-0 w-[100px]">{{ t('setting.name') }}</span>
         <div class="w-[200px]">
           <NInput v-model:value="name" placeholder="" />
         </div>
         <NButton v-if="false" size="tiny" text type="primary" @click="updateUserInfo({ name })">
-          {{ $t('common.save') }}
+          {{ t('common.save') }}
         </NButton>
       </div>
       <div v-if="false" class="flex items-center space-x-4">
-        <span class="flex-shrink-0 w-[100px]">{{ $t('setting.description') }}</span>
+        <span class="flex-shrink-0 w-[100px]">{{ t('setting.description') }}</span>
         <div class="flex-1">
           <NInput v-model:value="description" placeholder="" />
         </div>
         <NButton v-if="false" size="tiny" text type="primary" @click="updateUserInfo({ description })">
-          {{ $t('common.save') }}
+          {{ t('common.save') }}
         </NButton>
       </div>
       <div
         class="flex items-center space-x-4"
         :class="isMobile && 'items-start'"
       >
-        <span class="flex-shrink-0 w-[100px]">{{ $t('setting.chatHistory') }}</span>
+        <span class="flex-shrink-0 w-[100px]">{{ t('setting.chatHistory') }}</span>
 
         <div class="flex flex-wrap items-center gap-4">
           <NButton size="small" @click="exportData">
             <template #icon>
               <SvgIcon icon="ri:download-2-fill" />
             </template>
-            {{ $t('common.export') }}
+            {{ t('common.export') }}
           </NButton>
 
           <input id="fileInput" type="file" style="display:none" @change="importData">
@@ -175,7 +175,7 @@ function handleImportButtonClick(): void {
             <template #icon>
               <SvgIcon icon="ri:upload-2-fill" />
             </template>
-            {{ $t('common.import') }}
+            {{ t('common.import') }}
           </NButton>
 
           <NPopconfirm placement="bottom" @positive-click="clearData">
@@ -184,15 +184,15 @@ function handleImportButtonClick(): void {
                 <template #icon>
                   <SvgIcon icon="ri:close-circle-line" />
                 </template>
-                {{ $t('common.clear') }}
+                {{ t('common.clear') }}
               </NButton>
             </template>
-            {{ $t('chat.clearHistoryConfirm') }}
+            {{ t('chat.clearHistoryConfirm') }}
           </NPopconfirm>
         </div>
       </div>
       <div class="flex items-center space-x-4">
-        <span class="flex-shrink-0 w-[100px]">{{ $t('setting.theme') }}</span>
+        <span class="flex-shrink-0 w-[100px]">{{ t('setting.theme') }}</span>
         <div class="flex flex-wrap items-center gap-4">
           <template v-for="item of themeOptions" :key="item.key">
             <NButton
@@ -208,7 +208,7 @@ function handleImportButtonClick(): void {
         </div>
       </div>
       <div class="flex items-center space-x-4">
-        <span class="flex-shrink-0 w-[100px]">{{ $t('setting.language') }}</span>
+        <span class="flex-shrink-0 w-[100px]">{{ t('setting.language') }}</span>
         <div class="flex flex-wrap items-center gap-4">
           <NSelect
             style="width: 140px"
@@ -219,9 +219,9 @@ function handleImportButtonClick(): void {
         </div>
       </div>
       <div class="flex items-center space-x-4">
-        <span class="flex-shrink-0 w-[100px]">{{ $t('setting.resetUserInfo') }}</span>
+        <span class="flex-shrink-0 w-[100px]">{{ t('setting.resetUserInfo') }}</span>
         <NButton size="small" @click="handleReset">
-          {{ $t('common.reset') }}
+          {{ t('common.reset') }}
         </NButton>
       </div>
     </div>

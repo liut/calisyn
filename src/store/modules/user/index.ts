@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia'
 import type { UserInfo, UserState } from './helper'
+import { defineStore } from 'pinia'
 import { defaultSetting, getLocalState, setLocalState } from './helper'
 
 export const useUserStore = defineStore('user-store', {

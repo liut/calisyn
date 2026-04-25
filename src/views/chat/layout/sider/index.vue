@@ -1,13 +1,13 @@
 <script setup lang='ts'>
 import type { CSSProperties } from 'vue'
-import { computed, ref, watch } from 'vue'
 import { NButton, NLayoutSider, useDialog } from 'naive-ui'
-import List from './List.vue'
-import Footer from './Footer.vue'
-import { useAppStore, useChatStore } from '@/store'
-import { useBasicLayout } from '@/hooks/useBasicLayout'
+import { computed, ref, watch } from 'vue'
 import { PromptStore, SvgIcon } from '@/components/common'
+import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
+import { useAppStore, useChatStore } from '@/store'
+import Footer from './Footer.vue'
+import List from './List.vue'
 
 const appStore = useAppStore()
 const chatStore = useChatStore()
@@ -90,7 +90,7 @@ watch(
       <main class="flex flex-col flex-1 min-h-0">
         <div class="p-4">
           <NButton dashed block @click="handleAdd">
-            {{ $t('chat.newChatButton') }}
+            {{ t('chat.newChatButton') }}
           </NButton>
         </div>
         <div class="flex-1 min-h-0 pb-4 overflow-hidden">
@@ -99,7 +99,7 @@ watch(
         <div class="flex items-center p-4 space-x-4">
           <div v-if="false" class="flex-1">
             <NButton block @click="show = true">
-              {{ $t('store.siderButton') }}
+              {{ t('store.siderButton') }}
             </NButton>
           </div>
           <NButton v-if="false" @click="handleClearAll">

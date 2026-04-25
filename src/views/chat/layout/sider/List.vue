@@ -1,9 +1,10 @@
 <script setup lang='ts'>
-import { computed } from 'vue'
 import { NInput, NPopconfirm, NScrollbar } from 'naive-ui'
+import { computed } from 'vue'
 import { SvgIcon } from '@/components/common'
-import { useAppStore, useChatStore } from '@/store'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
+import { t } from '@/locales'
+import { useAppStore, useChatStore } from '@/store'
 import { debounce } from '@/utils/functions/debounce'
 
 const { isMobile } = useBasicLayout()
@@ -56,7 +57,7 @@ function isActive(csid: string) {
       <template v-if="!dataSources.length">
         <div class="flex flex-col items-center mt-4 text-center text-neutral-300">
           <SvgIcon icon="ri:inbox-line" class="mb-2 text-3xl" />
-          <span>{{ $t('common.noData') }}</span>
+          <span>{{ t('common.noData') }}</span>
         </div>
       </template>
       <template v-else>
@@ -93,7 +94,7 @@ function isActive(csid: string) {
                       <SvgIcon icon="ri:delete-bin-line" />
                     </button>
                   </template>
-                  {{ $t('chat.deleteHistoryConfirm') }}
+                  {{ t('chat.deleteHistoryConfirm') }}
                 </NPopconfirm>
               </template>
             </div>

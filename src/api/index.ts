@@ -1,7 +1,7 @@
 import type { GenericAbortSignal } from 'axios'
 import { SSE } from 'sse.js'
-import { get, patch, post } from '@/utils/request'
 import { useAuthStore, useSettingStore } from '@/store'
+import { get, patch, post } from '@/utils/request'
 
 export function authLogout() {
   return get({
@@ -11,7 +11,7 @@ export function authLogout() {
 
 export function fetchChatAPI<T = unknown>(
   prompt: string,
-  options?: { conversationId?: string; parentMessageId?: string },
+  options?: { conversationId?: string, parentMessageId?: string },
   signal?: GenericAbortSignal,
 ) {
   return post<T>({
@@ -59,7 +59,7 @@ export function fetchChatStream(
   params: {
     prompt: string
     csid?: string
-    options?: { conversationId?: string; parentMessageId?: string }
+    options?: { conversationId?: string, parentMessageId?: string }
     regen?: boolean
     onAbort?: (event: Event) => void
     onError?: (event: Event) => void

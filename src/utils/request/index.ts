@@ -1,6 +1,6 @@
 import type { AxiosProgressEvent, AxiosResponse, GenericAbortSignal } from 'axios'
-import request from './axios'
 import { useAuthStore } from '@/store'
+import request from './axios'
 
 export interface HttpOption {
   url: string
@@ -29,8 +29,9 @@ function http<T = any>(
       (res.status >= 200 && res.status < 300)
       || res.data.status === 'Success'
       || typeof res.data === 'string'
-    )
+    ) {
       return res.data
+    }
 
     if (res.status === 401 || res.data.status === 'Unauthorized') {
       authStore.removeToken()

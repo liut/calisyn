@@ -1,7 +1,7 @@
 import type { Router } from 'vue-router'
-import { useAuthStoreWithout } from '@/store/modules/auth'
-
 import { useUserStore } from '@/store'
+
+import { useAuthStoreWithout } from '@/store/modules/auth'
 
 export function setupPageGuard(router: Router) {
   router.beforeEach(async (to, from, next) => {
@@ -34,7 +34,7 @@ export function setupPageGuard(router: Router) {
           next()
         }
       }
-      catch (error) {
+      catch {
         if (to.path !== '/500')
           next({ name: '500' })
         else

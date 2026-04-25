@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
-import { defaultState, getLocalState, setLocalState } from './helper'
-import { router } from '@/router'
 import { t } from '@/locales'
+import { router } from '@/router'
+import { defaultState, getLocalState, setLocalState } from './helper'
 
 export const useChatStore = defineStore('chat-store', {
   state: (): Chat.ChatState => getLocalState(),

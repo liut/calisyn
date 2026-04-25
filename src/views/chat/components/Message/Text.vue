@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import { computed, onMounted, onUnmounted, onUpdated, ref } from 'vue'
-import MarkdownIt from 'markdown-it'
 import MdKatex from '@vscode/markdown-it-katex'
+import hljs from 'highlight.js'
+import MarkdownIt from 'markdown-it'
 import MdLinkAttributes from 'markdown-it-link-attributes'
 import MdMermaid from 'mermaid-it-markdown'
-import hljs from 'highlight.js'
+import { computed, onMounted, onUnmounted, onUpdated, ref } from 'vue'
+import { SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
 import { copyToClip } from '@/utils/copy'
-import { SvgIcon } from '@/components/common'
 
 interface Props {
   inversion?: boolean
@@ -26,7 +26,7 @@ const props = defineProps<Props>()
 // 思考段落的折叠状态管理
 const thinkCollapsedStates = ref<Map<number, boolean>>(new Map())
 // 思考段落的本地计时器（用于 loading 状态下的实时显示）
-const thinkLocalTimers = new Map<number, { startTime: number; duration: number; interval: number }>()
+const thinkLocalTimers = new Map<number, { startTime: number, duration: number, interval: number }>()
 // 用于触发视图刷新的 key
 const thinkTick = ref(0)
 
@@ -212,7 +212,7 @@ function isThinkCollapsed(index: number, chunk: Chat.MessageChunk): boolean {
 // 获取思考时间文本
 function getThinkDuration(index: number, chunk: Chat.MessageChunk): string {
   // 依赖 thinkTick 触发响应式更新
-  // eslint-disable-next-line no-void
+
   void (thinkTick.value)
 
   // 如果还在加载中，使用本地计时器

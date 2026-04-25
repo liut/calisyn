@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
 import { NAvatar } from 'naive-ui'
+import { computed } from 'vue'
+import defaultAvatar from '@/assets/avatar.png'
 import { useUserStore } from '@/store'
 import { isString } from '@/utils/is'
-import defaultAvatar from '@/assets/avatar.png'
 
 interface Props {
   image?: boolean
@@ -16,7 +16,7 @@ const avatar = computed(() => userStore.userInfo.avatar)
 
 const logoValue = import.meta.env.VITE_APP_LOGO || 'logo.png'
 // 支持外部 URL（http://, https://, data:）或本地文件
-const serviceAvatar = /^(https?|data):/.test(logoValue)
+const serviceAvatar = /^(?:https?|data):/.test(logoValue)
   ? logoValue
   : `${import.meta.env.VITE_BASE_PATH || ''}/${logoValue}`
 </script>

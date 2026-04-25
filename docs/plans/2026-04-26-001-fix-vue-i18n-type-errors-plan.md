@@ -1,8 +1,9 @@
 ---
 title: 修复 vue-i18n 类型错误
 type: fix
-status: active
+status: completed
 date: 2026-04-26
+completed-date: 2026-04-26
 ---
 
 # 修复 vue-i18n 类型错误
@@ -153,3 +154,28 @@ import { t } from '@/locales'
 
 - [Vue I18n - Composition API](https://vue-i18n.intlify.dev/guide/composition.html)
 - [vue-i18n global t function typing](https://github.com/vuejs/core/issues/4299)
+
+## 实际状态
+
+检查发现：**所有受影响文件已使用 `t()` 函数**，无需修改。
+
+```bash
+$ pnpm run type-check
+✓ 通过，无类型错误
+```
+
+### 当前代码模式
+
+所有 8 个受影响文件均已在 `<script setup>` 中导入 `t`：
+
+```ts
+import { t } from '@/locales'
+```
+
+模板中使用 `t()` 而非 `$t()`：
+
+```html
+{{ t('common.import') }}
+```
+
+**结论**：代码已迁移完成，类型检查通过。

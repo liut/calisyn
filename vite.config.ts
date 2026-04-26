@@ -53,8 +53,18 @@ export default defineConfig((env) => {
     build: {
       reportCompressedSize: false,
       sourcemap: false,
+      chunkSizeWarningLimit: 1500,
       commonjsOptions: {
         ignoreTryCatch: false,
+      },
+      rollupOptions: {
+        output: {
+          advancedChunks: {
+            groups: [
+              { name: 'vendor-katex', test: /[\\/]node_modules[\\/].*katex/ },
+            ],
+          },
+        },
       },
     },
   }

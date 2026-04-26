@@ -8,7 +8,7 @@ Calisyn is an AI chat application with Vue 3 frontend and Express backend.
 
 - **Frontend**: Vue 3 + Vite + Naive UI + Pinia + Vue Router + Vue I18n + Tailwind CSS
 - **Backend**: Express + Multi-Provider LLM (OpenAI, Anthropic, OpenRouter, Ollama)
-- **Node Version**: >=18
+- **Node Version**: >=20.19
 
 ## Common Commands
 

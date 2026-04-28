@@ -22,7 +22,7 @@ async function setupPlugins(env: ImportMetaEnv): Promise<PluginOption[]> {
     }),
     visualizer({
       open: true,
-      filename: 'dist/stats.html',
+      filename: 'stats.html',
       gzipSize: true,
       brotliSize: true,
     }),

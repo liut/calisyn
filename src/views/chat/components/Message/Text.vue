@@ -3,8 +3,8 @@ import MdKatex from '@vscode/markdown-it-katex'
 import hljs from 'highlight.js'
 import MarkdownIt from 'markdown-it'
 import MdLinkAttributes from 'markdown-it-link-attributes'
-import MdMermaid from 'mermaid-it-markdown'
-import { computed, onMounted, onUnmounted, onUpdated, ref } from 'vue'
+import type mermaid from 'mermaid'
+import { computed, onMounted, onUnmounted, onUpdated, ref, watch } from 'vue'
 import { SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
@@ -38,6 +38,10 @@ const mdi = new MarkdownIt({
   html: false,
   linkify: true,
   highlight(code, language) {
+    // mermaid 代码块不经过 highlight.js，保留 language class 以便 DOM 查找到
+    if (language === 'mermaid')
+      return highlightBlock(code, language)
+
     const validLang = !!(language && hljs.getLanguage(language))
     if (validLang) {
       const lang = language ?? ''
@@ -47,7 +51,82 @@ const mdi = new MarkdownIt({
   },
 })
 
-mdi.use(MdLinkAttributes, { attrs: { target: '_blank', rel: 'noopener' } }).use(MdKatex).use(MdMermaid)
+mdi.use(MdLinkAttributes, { attrs: { target: '_blank', rel: 'noopener' } }).use(MdKatex)
+
+// Mermaid 按需动态加载 — 仅在 markdown 内容包含 ```mermaid 时才加载
+const mermaidModule = ref<typeof mermaid | null>(null)
+let mermaidLoading: Promise<void> | null = null
+
+function simpleHash(str: string): string {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i)
+    hash |= 0
+  }
+  return hash.toString(36)
+}
+
+async function ensureMermaid(): Promise<void> {
+  if (mermaidModule.value) return
+  if (mermaidLoading) return mermaidLoading
+  mermaidLoading = import('mermaid').then((mod) => {
+    mermaidModule.value = mod.default
+    mermaidModule.value.initialize({ startOnLoad: false, suppressErrorRendering: true })
+    mermaidLoading = null
+  }).catch((err) => {
+    console.error('[mermaid] failed to load mermaid module:', err)
+    mermaidLoading = null
+  })
+  return mermaidLoading
+}
+
+function hasMermaidFence(text: string): boolean {
+  return /```mermaid/.test(text)
+}
+
+// mermaid 模块加载完成后调度渲染
+watch(mermaidModule, (mod) => {
+  if (mod)
+    scheduleMermaidRender()
+})
+
+// 流式输出期间延迟渲染：等 chunk 更新停止 400ms 后才渲染，避免闪烁和语法错误
+let mermaidDebounce: ReturnType<typeof setTimeout> | null = null
+function scheduleMermaidRender() {
+  if (mermaidDebounce) clearTimeout(mermaidDebounce)
+  mermaidDebounce = setTimeout(() => {
+    mermaidDebounce = null
+    renderMermaidInDOM()
+  }, 400)
+}
+
+// 查找 DOM 中的 mermaid 代码块并渲染为 SVG
+function renderMermaidInDOM() {
+  const mod = mermaidModule.value
+  if (!mod || !textRef.value) return
+
+  const codeEls = Array.from(textRef.value.querySelectorAll<HTMLElement>('code.code-block-body.mermaid'))
+  for (const codeEl of codeEls) {
+    const preEl = codeEl.closest('pre')
+    if (!preEl) continue
+
+    const code = codeEl.textContent || ''
+    const hash = simpleHash(code)
+
+    if (preEl.dataset.mermaidRendering === hash) continue
+    preEl.dataset.mermaidRendering = hash
+    mod.render(`mermaid-${hash}`, code).then(({ svg }: { svg: string }) => {
+      if (!preEl.isConnected) return
+      const wrapper = document.createElement('div')
+      wrapper.className = 'mermaid-container'
+      wrapper.innerHTML = svg
+      preEl.replaceWith(wrapper)
+    }).catch((err) => {
+      console.warn('[mermaid] render failed:', err)
+      delete preEl.dataset.mermaidRendering
+    })
+  }
+}
 
 const wrapClass = computed(() => {
   return [
@@ -66,6 +145,9 @@ const wrapClass = computed(() => {
 function renderMarkdown(value: string): string {
   if (!props.asRawText) {
     const escapedText = escapeBrackets(escapeDollarNumber(value))
+    if (hasMermaidFence(escapedText) && !mermaidModule.value)
+      ensureMermaid()
+
     return mdi.render(escapedText)
   }
   return value
@@ -273,6 +355,9 @@ onMounted(() => {
     if (chunk.type === 'think' && chunk.loading)
       startLocalTimer(idx)
   })
+  // 历史消息：mermaid 可能已在 beforeMount 阶段加载完成，DOM 就绪后渲染
+  if (mermaidModule.value)
+    renderMermaidInDOM()
 })
 
 onUpdated(() => {
@@ -292,12 +377,19 @@ onUpdated(() => {
       }
     }
   })
+  // 流式期间延迟渲染，等 chunk 更新停止后才执行
+  if (mermaidModule.value)
+    scheduleMermaidRender()
 })
 
 onUnmounted(() => {
   removeCopyEvents()
   // 清理所有本地计时器
   clearAllLocalTimers()
+  if (mermaidDebounce) {
+    clearTimeout(mermaidDebounce)
+    mermaidDebounce = null
+  }
 })
 </script>
 

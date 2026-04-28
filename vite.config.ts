@@ -5,7 +5,8 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-function setupPlugins(env: ImportMetaEnv): PluginOption[] {
+async function setupPlugins(env: ImportMetaEnv): Promise<PluginOption[]> {
+  const { visualizer } = await import('rollup-plugin-visualizer')
   return [
     vue(),
     env.VITE_PWA_ENABLE === 'true' && VitePWA({
@@ -19,10 +20,16 @@ function setupPlugins(env: ImportMetaEnv): PluginOption[] {
         ],
       },
     }),
+    visualizer({
+      open: true,
+      filename: 'dist/stats.html',
+      gzipSize: true,
+      brotliSize: true,
+    }),
   ]
 }
 
-export default defineConfig((env) => {
+export default defineConfig(async (env) => {
   const viteEnv = loadEnv(env.mode, import.meta.dirname) as unknown as ImportMetaEnv
   const apiProxyTo = viteEnv.VITE_API_PROXY_TO || 'http://127.0.0.1:3002'
 
@@ -33,7 +40,7 @@ export default defineConfig((env) => {
         '@': path.resolve(process.cwd(), 'src'),
       },
     },
-    plugins: setupPlugins(viteEnv),
+    plugins: await setupPlugins(viteEnv),
     server: {
       host: '0.0.0.0',
       port: Number(process.env.PORT) || 1002,
@@ -57,9 +64,9 @@ export default defineConfig((env) => {
       commonjsOptions: {
         ignoreTryCatch: false,
       },
-      rollupOptions: {
+      rolldownOptions: {
         output: {
-          advancedChunks: {
+          codeSplitting: {
             groups: [
               { name: 'vendor-katex', test: /[\\/]node_modules[\\/].*katex/ },
             ],

@@ -38,11 +38,19 @@ declare namespace Chat {
     csid: string
   }
 
+  interface RunningStreamEntry {
+    controller: AbortController
+    messageIndex?: number
+    startedAt: number
+    cancelled: boolean
+  }
+
   interface ChatState {
     active: string | null
     usingContext: boolean
     history: History[]
     chat: { csid: string, data: Chat[] }[]
+    runningStreams: Record<string, RunningStreamEntry>
   }
 
   interface ConversationRequest {

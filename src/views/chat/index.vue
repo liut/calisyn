@@ -17,7 +17,7 @@ import { useChat } from './hooks/useChat'
 import { useScroll } from './hooks/useScroll'
 import { useUsingContext } from './hooks/useUsingContext'
 
-let controller = new AbortController()
+const controller: AbortController | null = null
 
 const openLongReply = import.meta.env.VITE_OPEN_LONG_REPLY === 'true'
 
@@ -68,27 +68,30 @@ function createSSEHandler(options: SSEHandlerOptions) {
   let lastDelta = ''
   // 记录上一个 think（用于去重）
   let lastThink = ''
-  // 记录原始 csid，用于更新
+  // 记录流锁定的 csid：在整个流生命周期内固定为发起时的 csid，
+  // updateCsid 触发后切到 newCsid（不再清空），所有写入都走它。
   let originalCsid = csid
-  // 当前 csid（从路由获取）
-  let currentCsid = (route.params.csid as string) || chatStore.active || ''
   // 延迟折叠思考内容的定时器
   let thinkCollapseTimer: ReturnType<typeof setTimeout> | null = null
 
   // 处理单条 SSE 消息
   const handleMessage = (data: StreamMessage) => {
+    // 检查运行表是否已被中止（防止 abort 后的迟到 chunk 写入新 active csid）
+    const entry = chatStore.getRunningByCsid(originalCsid)
+    if (entry?.cancelled)
+      return
+
     // 忽略空消息（但允许只有 finishReason 或 title 的消息，用于更新标题等）
     const hasContent = (data.tool_calls && data.tool_calls.length > 0) || data.delta || data.think || data.text || data.finishReason || data.title
     if (!hasContent)
       return
 
-    // 获取当前最新的 csid（从路由获取）
-    currentCsid = (route.params.csid as string) || chatStore.active || ''
-
     // 首次收到消息时，如果有新的 csid 则更新（只更新一次）
     if (originalCsid && data.csid && data.csid !== originalCsid) {
-      chatStore.updateCsid(originalCsid, data.csid)
-      originalCsid = ''
+      const oldCsid = originalCsid
+      chatStore.updateCsid(oldCsid, data.csid)
+      chatStore.migrateStreamEntry(oldCsid, data.csid)
+      originalCsid = data.csid
     }
 
     // 处理工具调用数据：创建 tool_call 段落
@@ -198,7 +201,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
             .flatMap(c => c.toolCalls || [])
           const toolCalling = chunks.some(c => c.type === 'tool_call' && c.loading)
           updateChat(
-            currentCsid,
+            originalCsid,
             targetIndex,
             {
               dateTime: new Date().toLocaleString(),
@@ -251,7 +254,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
       const toolCalling = chunks.some(c => c.type === 'tool_call' && c.loading)
 
       updateChat(
-        currentCsid,
+        originalCsid,
         targetIndex,
         {
           dateTime: new Date().toLocaleString(),
@@ -288,7 +291,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
 
         // 当 finishReason 为 stop 时获取标题
         if (data.finishReason === 'stop') {
-          const finalCsid = data.csid || currentCsid
+          const finalCsid = data.csid || originalCsid
 
           // 优先使用服务端返回的标题，否则调用 API 获取
           if (data.title) {
@@ -304,7 +307,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
             })
           }
         }
-        updateChatSome(currentCsid, targetIndex, { loading: false, chunks })
+        updateChatSome(originalCsid, targetIndex, { loading: false, chunks })
       }
 
       scrollToBottomIfAtBottom()
@@ -325,7 +328,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
 
       await fetchChatStream({
         prompt: currentMessage,
-        csid: currentCsid,
+        csid: originalCsid,
         options: chatOptions,
         regen,
         signal,
@@ -372,10 +375,17 @@ async function onConversation() {
   if (!message || message.trim() === '')
     return
 
-  controller = new AbortController()
+  // 锁定发起时的 csid：路由可能在 await 期间被切换（用户点 aside），
+  // 之后所有写入必须落到原 csid，否则会污染新会话或被新会话覆盖。
+  const startedCsid = csid.value
+
+  // 同会话再次发送：先中止旧流再注册新流
+  chatStore.abortByCsid(startedCsid)
+
+  const localController = new AbortController()
 
   addChat(
-    csid.value,
+    startedCsid,
     {
       dateTime: new Date().toLocaleString(),
       text: message,
@@ -397,7 +407,7 @@ async function onConversation() {
     options = { ...lastContext }
 
   addChat(
-    csid.value,
+    startedCsid,
     {
       dateTime: new Date().toLocaleString(),
       text: t('chat.thinking'),
@@ -410,25 +420,36 @@ async function onConversation() {
   )
   scrollToBottom()
 
+  const messageIndex = chatStore.getChatByCsid(startedCsid).length - 1
+  chatStore.registerStream(startedCsid, {
+    controller: localController,
+    messageIndex,
+    startedAt: Date.now(),
+    cancelled: false,
+  })
+
   let handler: ReturnType<typeof createSSEHandler> | null = null
   try {
     handler = createSSEHandler({
       message,
-      csid: csid.value,
+      csid: startedCsid,
       options,
+      signal: localController.signal,
     })
 
     await handler.fetch(handler.handleMessage)
 
-    updateChatSome(csid.value, dataSources.value.length - 1, { loading: false, chunks: handler.getChunks() })
+    const finalIndex = chatStore.getChatByCsid(startedCsid).length - 1
+    updateChatSome(startedCsid, finalIndex, { loading: false, chunks: handler.getChunks() })
   }
   catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : t('common.wrong')
 
     if (error instanceof Error && (error.name === 'AbortError' || error.message === 'canceled')) {
+      const finalIndex = chatStore.getChatByCsid(startedCsid).length - 1
       updateChatSome(
-        csid.value,
-        dataSources.value.length - 1,
+        startedCsid,
+        finalIndex,
         {
           loading: false,
         },
@@ -437,12 +458,13 @@ async function onConversation() {
       return
     }
 
-    const currentChat = getChatByCsidAndIndex(csid.value, dataSources.value.length - 1)
+    const finalIndex = chatStore.getChatByCsid(startedCsid).length - 1
+    const currentChat = getChatByCsidAndIndex(startedCsid, finalIndex)
 
     if (currentChat?.text && currentChat.text !== '') {
       updateChatSome(
-        csid.value,
-        dataSources.value.length - 1,
+        startedCsid,
+        finalIndex,
         {
           text: `${currentChat.text}\n[${errorMessage}]`,
           error: false,
@@ -453,8 +475,8 @@ async function onConversation() {
     }
 
     updateChat(
-      csid.value,
-      dataSources.value.length - 1,
+      startedCsid,
+      finalIndex,
       {
         dateTime: new Date().toLocaleString(),
         text: errorMessage,
@@ -470,6 +492,7 @@ async function onConversation() {
   finally {
     loading.value = false
     handler?.close()
+    chatStore.unregisterStream(startedCsid)
   }
 }
 
@@ -477,9 +500,16 @@ async function onRegenerate(index: number) {
   if (loading.value)
     return
 
-  controller = new AbortController()
+  // 锁定发起时的 csid：路由可能在 await 期间被切换（用户点 aside），
+  // 之后所有写入必须落到原 csid，否则会污染新会话或被新会话覆盖。
+  const startedCsid = csid.value
 
-  const { requestOptions } = dataSources.value[index]
+  // 重新生成同会话：先中止旧流再注册新流
+  chatStore.abortByCsid(startedCsid)
+
+  const localController = new AbortController()
+
+  const { requestOptions } = chatStore.getChatByCsid(startedCsid)[index]
 
   const message = requestOptions?.prompt ?? ''
 
@@ -491,7 +521,7 @@ async function onRegenerate(index: number) {
   loading.value = true
 
   updateChat(
-    csid.value,
+    startedCsid,
     index,
     {
       dateTime: new Date().toLocaleString(),
@@ -504,25 +534,32 @@ async function onRegenerate(index: number) {
     },
   )
 
+  chatStore.registerStream(startedCsid, {
+    controller: localController,
+    messageIndex: index,
+    startedAt: Date.now(),
+    cancelled: false,
+  })
+
   let handler: ReturnType<typeof createSSEHandler> | null = null
   try {
     handler = createSSEHandler({
       message,
-      csid: csid.value,
+      csid: startedCsid,
       options,
       index,
       regen: true,
-      signal: controller.signal,
+      signal: localController.signal,
     })
 
     await handler.fetch(handler.handleMessage)
 
-    updateChatSome(csid.value, index, { loading: false, chunks: handler.getChunks() })
+    updateChatSome(startedCsid, index, { loading: false, chunks: handler.getChunks() })
   }
   catch (error: unknown) {
     if (error instanceof Error && (error.name === 'AbortError' || error.message === 'canceled')) {
       updateChatSome(
-        csid.value,
+        startedCsid,
         index,
         {
           loading: false,
@@ -534,7 +571,7 @@ async function onRegenerate(index: number) {
     const errorMessage = error instanceof Error ? error.message : t('common.wrong')
 
     updateChat(
-      csid.value,
+      startedCsid,
       index,
       {
         dateTime: new Date().toLocaleString(),
@@ -550,6 +587,7 @@ async function onRegenerate(index: number) {
   finally {
     loading.value = false
     handler?.close()
+    chatStore.unregisterStream(startedCsid)
   }
 }
 
@@ -639,7 +677,8 @@ function handleEnter(event: KeyboardEvent) {
 
 function handleStop() {
   if (loading.value) {
-    controller.abort()
+    chatStore.abortByCsid(csid.value)
+    controller?.abort()
     loading.value = false
   }
 }
@@ -677,7 +716,7 @@ const placeholder = computed(() => {
 })
 
 const buttonDisabled = computed(() => {
-  return loading.value || !prompt.value || prompt.value.trim() === ''
+  return loading.value || chatStore.getRunningByCsid(csid.value) !== undefined || !prompt.value || prompt.value.trim() === ''
 })
 
 const footerClass = computed(() => {
@@ -694,8 +733,11 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (loading.value)
-    controller.abort()
+  // 仅当该会话就是当前路由的 csid 时才中止（即真正页面销毁）。
+  // 跨会话切换由 Layout.vue 的 RouterView key=route.fullPath 触发 remount，
+  // 此时 csid.value 已被新路由覆盖，不应误中止后台流。
+  if (csid.value && chatStore.getRunningByCsid(csid.value) !== undefined)
+    chatStore.abortByCsid(csid.value)
 })
 </script>
 

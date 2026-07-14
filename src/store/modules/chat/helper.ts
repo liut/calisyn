@@ -10,6 +10,7 @@ export function defaultState(): Chat.ChatState {
     usingContext: true,
     history: [{ csid, title: t('chat.newChatTitle'), isEdit: false }],
     chat: [{ csid, data: [] }],
+    runningStreams: {},
   }
 }
 
@@ -34,9 +35,15 @@ export function getLocalState(): Chat.ChatState {
   if (localState?.active)
     localState.active = localState.active.toString()
 
+  // runningStreams 是运行时字段，刷新后清空（避免 AbortController 走 JSON.stringify 退化）
+  if (localState?.runningStreams)
+    delete localState.runningStreams
+
   return { ...defaultState(), ...localState }
 }
 
 export function setLocalState(state: Chat.ChatState) {
-  ss.set(LOCAL_NAME, state)
+  // 过滤运行时字段，AbortController 等不可序列化对象不应进入 localStorage
+  const { runningStreams: _runningStreams, ...persisted } = state
+  ss.set(LOCAL_NAME, persisted)
 }

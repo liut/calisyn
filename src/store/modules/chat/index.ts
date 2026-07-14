@@ -45,6 +45,11 @@ export const useChatStore = defineStore('chat-store', {
     },
 
     async deleteHistory(index: number) {
+      // 先停后删：若被删除的会话仍在生成，先中止其流，避免迟到 chunk 命中已删除 csid
+      const target = this.history[index]
+      if (target?.csid)
+        this.abortByCsid(target.csid)
+
       this.history.splice(index, 1)
       this.chat.splice(index, 1)
 
@@ -185,6 +190,8 @@ export const useChatStore = defineStore('chat-store', {
     },
 
     clearHistory() {
+      // 重置 state 前先中止所有进行中的流，避免 controller 引用残留
+      this.abortAllStreams()
       this.$state = { ...defaultState() }
       this.recordState()
     },
@@ -192,6 +199,63 @@ export const useChatStore = defineStore('chat-store', {
     async reloadRoute(csid?: string) {
       this.recordState()
       await router.push({ name: 'Chat', params: { csid } })
+    },
+
+    registerStream(csid: string, entry: Chat.RunningStreamEntry) {
+      if (!csid)
+        return
+      const existing = this.runningStreams[csid]
+      if (existing) {
+        existing.cancelled = true
+        try {
+          existing.controller.abort()
+        }
+        catch {}
+        delete this.runningStreams[csid]
+      }
+      this.runningStreams[csid] = { ...entry, cancelled: false }
+    },
+
+    unregisterStream(csid: string) {
+      if (!csid)
+        return
+      delete this.runningStreams[csid]
+    },
+
+    getRunningByCsid(csid: string) {
+      if (!csid)
+        return undefined
+      return this.runningStreams[csid]
+    },
+
+    abortByCsid(csid: string) {
+      if (!csid)
+        return
+      const entry = this.runningStreams[csid]
+      if (!entry)
+        return
+      entry.cancelled = true
+      try {
+        entry.controller.abort()
+      }
+      catch {}
+      delete this.runningStreams[csid]
+    },
+
+    migrateStreamEntry(oldCsid: string, newCsid: string) {
+      if (!oldCsid || !newCsid || oldCsid === newCsid)
+        return
+      const entry = this.runningStreams[oldCsid]
+      if (!entry)
+        return
+      delete this.runningStreams[oldCsid]
+      this.runningStreams[newCsid] = entry
+    },
+
+    abortAllStreams() {
+      for (const csid of Object.keys(this.runningStreams)) {
+        this.abortByCsid(csid)
+      }
     },
 
     // 更新chat条目的csid（当SSE返回新的csid时调用）

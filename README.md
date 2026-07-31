@@ -1,6 +1,8 @@
 # Calisyn
 
-> Disclaimer: This project is only published on GitHub, based on the MIT license, free and for open source learning usage. And there will be no any form of account selling, paid service, discussion group, discussion group and other behaviors. Beware of being deceived.
+> Forked from [Chanzhaoyu/chatgpt-web](https://github.com/Chanzhaoyu/chatgpt-web) (archived Feb 10, 2025).
+
+> MIT licensed, free for open-source learning only. Published solely on GitHub — no paid accounts or services. Beware of scams.
 
 [中文](README.zh.md)
 

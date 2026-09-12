@@ -18,6 +18,7 @@ export default {
     clearSuccess: 'Clear Success',
     yes: 'Yes',
     no: 'No',
+    cancel: 'Cancel',
     confirm: 'Confirm',
     download: 'Download',
     noData: 'No Data',

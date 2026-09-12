@@ -18,6 +18,7 @@ export default {
     clearSuccess: 'Limpieza exitosa',
     yes: 'Sí',
     no: 'No',
+    cancel: 'Cancelar',
     confirm: 'Confirmar',
     download: 'Descargar',
     noData: 'Sin datos',

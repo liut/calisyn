@@ -18,6 +18,7 @@ export default {
     clearSuccess: 'Очищено успешно',
     yes: 'Да',
     no: 'Нет',
+    cancel: 'Отмена',
     confirm: 'Подтвердить',
     download: 'Загрузить',
     noData: 'Нет данных',

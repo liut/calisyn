@@ -18,6 +18,7 @@ export default {
     clearSuccess: '비우기 성공',
     yes: '예',
     no: '아니오',
+    cancel: '취소',
     confirm: '확인',
     download: '다운로드',
     noData: '데이터 없음',

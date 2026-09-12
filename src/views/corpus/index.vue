@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import type { DataTableColumns, DataTableSortState } from 'naive-ui'
-import type { CorpusSortField, CorpusSortOrder } from './utils'
+import type { CorpusSortField, CorpusSortOrder, PagedResult } from './utils'
 import type { CorpusDocument } from '@/api/corpus'
 import { NAlert, NButton, NDataTable, NInput, NPagination, NSpace, NTooltip, useDialog, useMessage } from 'naive-ui'
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -33,6 +33,7 @@ const total = ref(0)
 
 const drawerVisible = ref(false)
 const activeDocument = ref<CorpusDocument | null>(null)
+const deletingId = ref<string | null>(null)
 
 const sortParam = computed(() => `${sortOrder.value === 'descend' ? '-' : ''}${sortField.value}`)
 
@@ -49,18 +50,20 @@ function errorTip(err: unknown, fallbackKey: string) {
   return t(corpusErrorKey(err) ?? fallbackKey)
 }
 
-async function loadServerPage() {
+async function fetchServerPage(): Promise<PagedResult<CorpusDocument>> {
   const res = await fetchCorpusDocuments({
     page: page.value,
     limit: pageSize.value,
     sort: sortParam.value,
   })
 
-  rows.value = res.result?.data ?? []
-  total.value = res.result?.total ?? 0
+  return {
+    rows: res.result?.data ?? [],
+    total: res.result?.total ?? 0,
+  }
 }
 
-async function loadSearchResults(query: string) {
+async function fetchSearchResults(query: string): Promise<PagedResult<CorpusDocument>> {
   // 后端三个字段过滤是 AND 且只做前缀匹配，因此并行三路查询后在前端合并去重。
   const [titleRes, headingRes, contentRes] = await Promise.all([
     fetchCorpusDocuments({ title: query, limit: SEARCH_LIMIT }),
@@ -74,31 +77,43 @@ async function loadSearchResults(query: string) {
     contentRes.result?.data ?? [],
   ])
   const sorted = sortCorpusDocuments(merged, sortField.value, sortOrder.value)
-  const paged = paginate(sorted, page.value, pageSize.value)
 
-  rows.value = paged.rows
-  total.value = paged.total
+  return paginate(sorted, page.value, pageSize.value)
 }
 
+/**
+ * 递增的请求序号：搜索防抖、翻页、排序切换可能让多个 load 同时在飞，
+ * 只接受最后一次发起的请求结果，避免旧响应覆盖新数据。
+ */
+let loadToken = 0
+
 async function load() {
+  const token = ++loadToken
+
   loading.value = true
   error.value = null
 
   try {
     const query = keyword.value.trim()
+    const result = query ? await fetchSearchResults(query) : await fetchServerPage()
 
-    if (query)
-      await loadSearchResults(query)
-    else
-      await loadServerPage()
+    if (token !== loadToken)
+      return
+
+    rows.value = result.rows
+    total.value = result.total
   }
   catch (err) {
+    if (token !== loadToken)
+      return
+
     error.value = err
     rows.value = []
     total.value = 0
   }
   finally {
-    loading.value = false
+    if (token === loadToken)
+      loading.value = false
   }
 }
 
@@ -122,12 +137,21 @@ function openDrawer(document: CorpusDocument) {
 }
 
 function handleDelete(document: CorpusDocument) {
+  // 已有删除在进行/待确认时不再开第二个确认框，避免重复 DELETE。
+  if (deletingId.value)
+    return
+
   dialog.warning({
     title: t('corpus.deleteConfirmTitle'),
     content: t('corpus.deleteConfirmContent'),
     positiveText: t('common.yes'),
     negativeText: t('common.no'),
     onPositiveClick: async () => {
+      if (deletingId.value)
+        return
+
+      deletingId.value = document.id
+
       try {
         await deleteCorpusDocument(document.id)
         message.success(t('common.deleteSuccess'))
@@ -135,6 +159,9 @@ function handleDelete(document: CorpusDocument) {
       }
       catch (err) {
         message.error(errorTip(err, 'corpus.deleteFailed'))
+      }
+      finally {
+        deletingId.value = null
       }
     },
   })

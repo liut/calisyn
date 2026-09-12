@@ -18,6 +18,7 @@ export default {
     clearSuccess: 'Dọn dẹp thành công',
     yes: 'Có',
     no: 'Không',
+    cancel: 'Hủy',
     confirm: 'Xác nhận',
     download: 'Tải xuống',
     noData: 'Không có dữ liệu',

@@ -18,6 +18,7 @@ export default {
     clearSuccess: '清空成功',
     yes: '是',
     no: '否',
+    cancel: '取消',
     confirm: '确定',
     download: '下载',
     noData: '暂无数据',

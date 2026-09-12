@@ -34,17 +34,23 @@ const width = computed(() => (isMobile.value ? '100%' : 720))
 
 const title = computed(() => props.doc?.title || t('corpus.detailTitle'))
 
-watch(
-  () => props.doc,
-  (doc) => {
-    form.value = {
-      title: doc?.title ?? '',
-      heading: doc?.heading ?? '',
-      content: doc?.content ?? '',
-    }
-  },
-  { immediate: true },
-)
+function resetForm() {
+  const doc = props.doc
+
+  form.value = {
+    title: doc?.title ?? '',
+    heading: doc?.heading ?? '',
+    content: doc?.content ?? '',
+  }
+}
+
+watch(() => props.doc, resetForm, { immediate: true })
+
+// 每次打开抽屉都从当前行重新初始化，避免上一次未保存的编辑在重新打开时"复活"。
+watch(() => props.show, (visible) => {
+  if (visible)
+    resetForm()
+})
 
 function formatTime(value?: string) {
   if (!value)
@@ -164,7 +170,7 @@ function handleDelete() {
           </NButton>
           <NSpace>
             <NButton :disabled="saving" @click="close">
-              {{ t('common.no') }}
+              {{ t('common.cancel') }}
             </NButton>
             <NButton type="primary" :loading="saving" @click="handleSave">
               {{ t('common.save') }}

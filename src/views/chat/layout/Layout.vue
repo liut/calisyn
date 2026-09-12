@@ -1,18 +1,21 @@
 <script setup lang='ts'>
 import { NLayout, NLayoutContent } from 'naive-ui'
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { useAppStore, useAuthStore, useChatStore } from '@/store'
 import Permission from './Permission.vue'
 import Sider from './sider/index.vue'
 
 const router = useRouter()
+const currentRoute = useRoute()
 const appStore = useAppStore()
 const chatStore = useChatStore()
 const authStore = useAuthStore()
 
-router.replace({ name: 'Chat', params: { csid: chatStore.active } })
+// 语料管理页是 Root 布局下的独立页面，不能被强制弹回聊天页。
+if (currentRoute.name !== 'Corpus')
+  router.replace({ name: 'Chat', params: { csid: chatStore.active } })
 
 const { isMobile } = useBasicLayout()
 

@@ -4,7 +4,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { ChatLayout } from '@/views/chat/layout'
 import { setupPageGuard } from './permission'
 
-const routes: RouteRecordRaw[] = [
+export const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Root',
@@ -15,6 +15,11 @@ const routes: RouteRecordRaw[] = [
         path: '/chat/:csid?',
         name: 'Chat',
         component: () => import('@/views/chat/index.vue'),
+      },
+      {
+        path: '/corpus',
+        name: 'Corpus',
+        component: () => import('@/views/corpus/index.vue'),
       },
     ],
   },

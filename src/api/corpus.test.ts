@@ -36,6 +36,17 @@ describe('corpus API layer', () => {
     expect(getMock).toHaveBeenCalledWith({ url: '/corpus/documents', data: {} })
   })
 
+  it('fetchCorpusDocuments forwards the semantic match keyword', async () => {
+    getMock.mockResolvedValue({ status: 0, result: { data: [], total: 0 } })
+
+    await fetchCorpusDocuments({ page: 1, limit: 20, sort: '-updated', match: 'kv cache' })
+
+    expect(getMock).toHaveBeenCalledWith({
+      url: '/corpus/documents',
+      data: { page: 1, limit: 20, sort: '-updated', match: 'kv cache' },
+    })
+  })
+
   it('updateCorpusDocument PUTs to the document URL with the patch body', async () => {
     putMock.mockResolvedValue({ status: 0, result: 'ok' })
 

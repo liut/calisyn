@@ -19,6 +19,8 @@ export interface CorpusQueryParams {
   title?: string
   heading?: string
   content?: string
+  /** 内容搜索关键词：走向量（语义）匹配，不做 like。 */
+  match?: string
 }
 
 export interface CorpusListResult {

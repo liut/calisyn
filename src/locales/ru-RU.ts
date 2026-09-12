@@ -106,7 +106,7 @@ export default {
     title: 'Документы корпуса',
     backToChat: 'Вернуться в чат',
     entry: 'Документы корпуса',
-    searchPlaceholder: 'Поиск по заголовку, разделу или содержимому',
+    searchPlaceholder: 'Поиск документов (семантический)',
     import: 'Импорт CSV',
     importDisabled: 'Серверный импорт ещё не готов',
     total: 'Всего: {total}',

@@ -107,7 +107,7 @@ export default {
     title: '语料文档管理',
     backToChat: '返回聊天',
     entry: '语料文档管理',
-    searchPlaceholder: '搜索标题、小节或内容',
+    searchPlaceholder: '搜索文档（语义匹配）',
     import: '导入 CSV',
     importDisabled: '后端导入方案尚未就绪，暂不可用',
     total: '共 {total} 条',

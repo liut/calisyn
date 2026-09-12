@@ -103,7 +103,7 @@ export default {
     title: 'Documentos del corpus',
     backToChat: 'Volver al chat',
     entry: 'Documentos del corpus',
-    searchPlaceholder: 'Buscar por título, sección o contenido',
+    searchPlaceholder: 'Buscar documentos (semántica)',
     import: 'Importar CSV',
     importDisabled: 'La importación en el servidor aún no está disponible',
     total: '{total} documentos',

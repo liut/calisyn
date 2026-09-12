@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import type { DataTableColumns, DataTableSortState } from 'naive-ui'
 import type { CorpusSortField, CorpusSortOrder, PagedResult } from './utils'
-import type { CorpusDocument } from '@/api/corpus'
+import type { CorpusDocument, CorpusQueryParams } from '@/api/corpus'
 import { NAlert, NButton, NDataTable, NInput, NPagination, NSpace, NTooltip, useDialog, useMessage } from 'naive-ui'
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -10,10 +10,7 @@ import { SvgIcon } from '@/components/common'
 import { t } from '@/locales'
 import { useAuthStore, useChatStore } from '@/store'
 import DocumentDrawer from './components/DocumentDrawer.vue'
-import { corpusErrorKey, mergeCorpusSearch, paginate, sortCorpusDocuments } from './utils'
-
-/** 三路关键词查询各自的上限（morrigan 不支持跨字段 OR 搜索）。 */
-const SEARCH_LIMIT = 200
+import { corpusErrorKey } from './utils'
 
 const DEFAULT_SORT_FIELD: CorpusSortField = 'updated'
 const DEFAULT_SORT_ORDER: CorpusSortOrder = 'descend'
@@ -54,35 +51,24 @@ function errorTip(err: unknown, fallbackKey: string) {
   return t(corpusErrorKey(err) ?? fallbackKey)
 }
 
-async function fetchServerPage(): Promise<PagedResult<CorpusDocument>> {
-  const res = await fetchCorpusDocuments({
+async function fetchPage(): Promise<PagedResult<CorpusDocument>> {
+  const query = keyword.value.trim()
+  const params: CorpusQueryParams = {
     page: page.value,
     limit: pageSize.value,
     sort: sortParam.value,
-  })
+  }
+
+  // morrigan 的 match 参数走向量（语义）匹配，单次请求即可，分页与排序仍由服务端完成。
+  if (query)
+    params.match = query
+
+  const res = await fetchCorpusDocuments(params)
 
   return {
     rows: res.result?.data ?? [],
     total: res.result?.total ?? 0,
   }
-}
-
-async function fetchSearchResults(query: string): Promise<PagedResult<CorpusDocument>> {
-  // 后端三个字段过滤是 AND 且只做前缀匹配，因此并行三路查询后在前端合并去重。
-  const [titleRes, headingRes, contentRes] = await Promise.all([
-    fetchCorpusDocuments({ title: query, limit: SEARCH_LIMIT }),
-    fetchCorpusDocuments({ heading: query, limit: SEARCH_LIMIT }),
-    fetchCorpusDocuments({ content: query, limit: SEARCH_LIMIT }),
-  ])
-
-  const merged = mergeCorpusSearch([
-    titleRes.result?.data ?? [],
-    headingRes.result?.data ?? [],
-    contentRes.result?.data ?? [],
-  ])
-  const sorted = sortCorpusDocuments(merged, sortField.value, sortOrder.value)
-
-  return paginate(sorted, page.value, pageSize.value)
 }
 
 /**
@@ -98,8 +84,7 @@ async function load() {
   error.value = null
 
   try {
-    const query = keyword.value.trim()
-    const result = query ? await fetchSearchResults(query) : await fetchServerPage()
+    const result = await fetchPage()
 
     if (token !== loadToken)
       return

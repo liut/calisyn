@@ -107,7 +107,7 @@ export default {
     title: '語料文件管理',
     backToChat: '返回聊天',
     entry: '語料文件管理',
-    searchPlaceholder: '搜尋標題、小節或內容',
+    searchPlaceholder: '搜尋文件（語意比對）',
     import: '匯入 CSV',
     importDisabled: '後端匯入方案尚未就緒，暫不可用',
     total: '共 {total} 筆',

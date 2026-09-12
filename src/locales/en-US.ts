@@ -107,7 +107,7 @@ export default {
     title: 'Corpus Documents',
     backToChat: 'Back to chat',
     entry: 'Corpus Documents',
-    searchPlaceholder: 'Search title, heading or content',
+    searchPlaceholder: 'Search documents (semantic)',
     import: 'Import CSV',
     importDisabled: 'Server-side import is not ready yet',
     total: '{total} documents',

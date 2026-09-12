@@ -7,6 +7,16 @@ export function setupPageGuard(router: Router) {
   router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStoreWithout()
     const userStore = useUserStore()
+
+    // 语料管理页仅 keeper 用户可达，其余用户统一引导回聊天页。
+    const ensureCorpusAccess = () => {
+      if (to.name === 'Corpus' && !authStore.isKeeper) {
+        next({ name: 'Chat' })
+        return false
+      }
+      return true
+    }
+
     if (!authStore.session) {
       try {
         const data = await authStore.getSession()
@@ -22,6 +32,9 @@ export function setupPageGuard(router: Router) {
 
           return // Necessary to stop router navigation after browser redirect
         }
+        if (!ensureCorpusAccess())
+          return
+
         if (to.path === '/500') {
           next({ name: 'Root' })
         }
@@ -42,6 +55,9 @@ export function setupPageGuard(router: Router) {
       }
     }
     else {
+      if (!ensureCorpusAccess())
+        return
+
       next()
     }
   })

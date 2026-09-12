@@ -1,4 +1,4 @@
-import type { AxiosProgressEvent, AxiosResponse, GenericAbortSignal } from 'axios'
+import type { AxiosError, AxiosProgressEvent, AxiosResponse, GenericAbortSignal } from 'axios'
 import { useAuthStore } from '@/store'
 import request from './axios'
 
@@ -41,9 +41,17 @@ function http<T = any>(
     return Promise.reject(res.data)
   }
 
-  const failHandler = (error: Response<Error>) => {
+  const failHandler = (error: AxiosError<Response<Error>>) => {
     afterRequest?.()
-    throw new Error(error?.message || 'Error')
+    // Prefer the server-provided message (e.g. "无权限" for 403) and keep the
+    // HTTP status so callers can distinguish 401/403 from generic failures.
+    const err = new Error(error?.response?.data?.message || error?.message || 'Error') as Error & {
+      status?: number
+      response?: AxiosResponse
+    }
+    err.status = error?.response?.status
+    err.response = error?.response
+    throw err
   }
 
   beforeRequest?.()
@@ -60,6 +68,9 @@ function http<T = any>(
 
   if (method === 'PUT')
     return request.put(url, params, { headers, signal, onDownloadProgress }).then(successHandler, failHandler)
+
+  if (method === 'DELETE')
+    return request.delete(url, { params, headers, signal, onDownloadProgress }).then(successHandler, failHandler)
 
   return request.post(url, params, { headers, signal, onDownloadProgress }).then(successHandler, failHandler)
 }
@@ -110,6 +121,21 @@ export function patch<T = any>(
 
 export function put<T = any>(
   { url, data, method = 'PUT', headers, onDownloadProgress, signal, beforeRequest, afterRequest }: HttpOption,
+): Promise<Response<T>> {
+  return http<T>({
+    url,
+    method,
+    data,
+    headers,
+    onDownloadProgress,
+    signal,
+    beforeRequest,
+    afterRequest,
+  })
+}
+
+export function del<T = any>(
+  { url, data, method = 'DELETE', headers, onDownloadProgress, signal, beforeRequest, afterRequest }: HttpOption,
 ): Promise<Response<T>> {
   return http<T>({
     url,

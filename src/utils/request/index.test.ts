@@ -1,60 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// 创建一个模拟的 request 对象
-function createMockRequest() {
-  return {
+const { mockRequest } = vi.hoisted(() => ({
+  mockRequest: {
     get: vi.fn(),
     post: vi.fn(),
     patch: vi.fn(),
     put: vi.fn(),
+    delete: vi.fn(),
     interceptors: {
       request: { use: vi.fn() },
       response: { use: vi.fn() },
     },
-  }
-}
+  },
+}))
 
-// 直接测试 http 函数的逻辑
+vi.mock('./axios', () => ({ default: mockRequest }))
+
+const importRequest = () => import('./index')
+
 describe('request/index.ts - HTTP method routing', () => {
-  let mockRequest: ReturnType<typeof createMockRequest>
-
   beforeEach(() => {
-    mockRequest = createMockRequest()
-
-    // 设置 mock 返回值
-    mockRequest.get.mockResolvedValue({ data: { status: 'Success', data: 'test' } })
-    mockRequest.post.mockResolvedValue({ data: { status: 'Success', data: 'test' } })
-    mockRequest.patch.mockResolvedValue({ data: { status: 'Success', data: 'test' } })
-    mockRequest.put.mockResolvedValue({ data: { status: 'Success', data: 'test' } })
+    vi.clearAllMocks()
+    const ok = { status: 200, data: { status: 'Success', data: 'test' } }
+    mockRequest.get.mockResolvedValue(ok)
+    mockRequest.post.mockResolvedValue(ok)
+    mockRequest.patch.mockResolvedValue(ok)
+    mockRequest.put.mockResolvedValue(ok)
+    mockRequest.delete.mockResolvedValue(ok)
   })
 
-  const testHttpRouting = async (method: string, expectedFn: 'get' | 'post' | 'patch' | 'put', url = '/test') => {
-    const params = { key: 'value' }
-    const headers = {}
-    const signal = undefined
-    const onDownloadProgress = undefined
-
-    let result: any
-
-    if (method === 'GET')
-      result = mockRequest.get(url, { params, signal, onDownloadProgress })
-
-    else if (method === 'PATCH')
-      result = mockRequest.patch(url, params, { headers, signal, onDownloadProgress })
-
-    else if (method === 'PUT')
-      result = mockRequest.put(url, params, { headers, signal, onDownloadProgress })
-
-    else
-      result = mockRequest.post(url, params, { headers, signal, onDownloadProgress })
-
-    await result
-
-    return result
-  }
-
-  it('should call request.get for GET method', async () => {
-    await testHttpRouting('GET', 'get')
+  it('routes GET through request.get with params', async () => {
+    const { get } = await importRequest()
+    await get({ url: '/test', data: { key: 'value' } })
 
     expect(mockRequest.get).toHaveBeenCalledWith('/test', {
       params: { key: 'value' },
@@ -62,79 +39,131 @@ describe('request/index.ts - HTTP method routing', () => {
       onDownloadProgress: undefined,
     })
     expect(mockRequest.post).not.toHaveBeenCalled()
-    expect(mockRequest.patch).not.toHaveBeenCalled()
-    expect(mockRequest.put).not.toHaveBeenCalled()
+    expect(mockRequest.delete).not.toHaveBeenCalled()
   })
 
-  it('should call request.patch for PATCH method', async () => {
-    await testHttpRouting('PATCH', 'patch')
-
-    expect(mockRequest.patch).toHaveBeenCalledWith('/test', { key: 'value' }, {
-      headers: {},
-      signal: undefined,
-      onDownloadProgress: undefined,
-    })
-    expect(mockRequest.get).not.toHaveBeenCalled()
-    expect(mockRequest.post).not.toHaveBeenCalled()
-    expect(mockRequest.put).not.toHaveBeenCalled()
-  })
-
-  it('should call request.put for PUT method', async () => {
-    await testHttpRouting('PUT', 'put')
-
-    expect(mockRequest.put).toHaveBeenCalledWith('/test', { key: 'value' }, {
-      headers: {},
-      signal: undefined,
-      onDownloadProgress: undefined,
-    })
-    expect(mockRequest.get).not.toHaveBeenCalled()
-    expect(mockRequest.post).not.toHaveBeenCalled()
-    expect(mockRequest.patch).not.toHaveBeenCalled()
-  })
-
-  it('should call request.post for unknown methods', async () => {
-    await testHttpRouting('DELETE', 'post')
+  it('routes POST through request.post with the body', async () => {
+    const { post } = await importRequest()
+    await post({ url: '/test', data: { key: 'value' } })
 
     expect(mockRequest.post).toHaveBeenCalledWith('/test', { key: 'value' }, {
-      headers: {},
+      headers: undefined,
       signal: undefined,
       onDownloadProgress: undefined,
     })
     expect(mockRequest.get).not.toHaveBeenCalled()
-    expect(mockRequest.patch).not.toHaveBeenCalled()
-    expect(mockRequest.put).not.toHaveBeenCalled()
   })
 
-  it('should call request.post for POST method by default', async () => {
-    const params = { key: 'value' }
-    const headers = {}
-    const signal = undefined
-    const onDownloadProgress = undefined
+  it('routes PATCH through request.patch with the body', async () => {
+    const { patch } = await importRequest()
+    await patch({ url: '/test', data: { key: 'value' } })
 
-    await mockRequest.post('/test', params, { headers, signal, onDownloadProgress })
+    expect(mockRequest.patch).toHaveBeenCalledWith('/test', { key: 'value' }, {
+      headers: undefined,
+      signal: undefined,
+      onDownloadProgress: undefined,
+    })
+    expect(mockRequest.post).not.toHaveBeenCalled()
+  })
 
-    expect(mockRequest.post).toHaveBeenCalled()
+  it('routes PUT through request.put with the body', async () => {
+    const { put } = await importRequest()
+    await put({ url: '/test', data: { key: 'value' } })
+
+    expect(mockRequest.put).toHaveBeenCalledWith('/test', { key: 'value' }, {
+      headers: undefined,
+      signal: undefined,
+      onDownloadProgress: undefined,
+    })
+    expect(mockRequest.post).not.toHaveBeenCalled()
+  })
+
+  it('routes DELETE through request.delete with params and headers', async () => {
+    const { del } = await importRequest()
+    await del({ url: '/corpus/documents/abc', data: { key: 'value' }, headers: { 'X-Test': '1' } })
+
+    expect(mockRequest.delete).toHaveBeenCalledWith('/corpus/documents/abc', {
+      params: { key: 'value' },
+      headers: { 'X-Test': '1' },
+      signal: undefined,
+      onDownloadProgress: undefined,
+    })
+    expect(mockRequest.post).not.toHaveBeenCalled()
+    expect(mockRequest.get).not.toHaveBeenCalled()
+  })
+
+  it('falls back to request.post for unknown methods', async () => {
+    const { get } = await importRequest()
+    await get({ url: '/test', data: { key: 'value' }, method: 'OPTIONS' })
+
+    expect(mockRequest.post).toHaveBeenCalledWith('/test', { key: 'value' }, {
+      headers: undefined,
+      signal: undefined,
+      onDownloadProgress: undefined,
+    })
+    expect(mockRequest.get).not.toHaveBeenCalled()
+  })
+})
+
+describe('request/index.ts - response handling', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('resolves with the raw response body on success', async () => {
+    mockRequest.get.mockResolvedValue({ status: 200, data: { status: 0, result: { data: [], total: 0 } } })
+
+    const { get } = await importRequest()
+    const res = await get({ url: '/corpus/documents' })
+
+    expect(res).toEqual({ status: 0, result: { data: [], total: 0 } })
+  })
+
+  it('preserves the server message and HTTP status on failure', async () => {
+    mockRequest.delete.mockRejectedValue({
+      message: 'Request failed with status code 403',
+      response: { status: 403, data: { status: 403, message: '无权限' } },
+    })
+
+    const { del } = await importRequest()
+    await expect(del({ url: '/corpus/documents/abc' })).rejects.toMatchObject({
+      message: '无权限',
+      status: 403,
+    })
+  })
+
+  it('falls back to the axios message when the server sends no message', async () => {
+    mockRequest.get.mockRejectedValue({
+      message: 'Request failed with status code 500',
+      response: { status: 500, data: {} },
+    })
+
+    const { get } = await importRequest()
+    await expect(get({ url: '/corpus/documents' })).rejects.toMatchObject({
+      message: 'Request failed with status code 500',
+      status: 500,
+    })
+  })
+
+  it('keeps the axios message and leaves status undefined for network errors', async () => {
+    mockRequest.get.mockRejectedValue({ message: 'Network Error' })
+
+    const { get } = await importRequest()
+    await expect(get({ url: '/corpus/documents' })).rejects.toMatchObject({
+      message: 'Network Error',
+      status: undefined,
+    })
   })
 })
 
 describe('request/index.ts - Function exports', () => {
-  it('should export get function', async () => {
-    const { get } = await import('./index')
-    expect(typeof get).toBe('function')
+  it.each(['get', 'post', 'patch', 'put', 'del'])('exports %s', async (name) => {
+    const mod = await importRequest()
+    expect(typeof mod[name as keyof typeof mod]).toBe('function')
   })
 
-  it('should export post function', async () => {
-    const { post } = await import('./index')
-    expect(typeof post).toBe('function')
-  })
-
-  it('should export patch function', async () => {
-    const { patch } = await import('./index')
-    expect(typeof patch).toBe('function')
-  })
-
-  it('should export put function', async () => {
-    const { put } = await import('./index')
-    expect(typeof put).toBe('function')
+  it('defaults to post', async () => {
+    const { default: requestDefault, post } = await importRequest()
+    expect(requestDefault).toBe(post)
   })
 })

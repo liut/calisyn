@@ -28,6 +28,8 @@ const page = ref(1)
 const pageSize = ref(20)
 const sortField = ref<CorpusSortField>(DEFAULT_SORT_FIELD)
 const sortOrder = ref<CorpusSortOrder>(DEFAULT_SORT_ORDER)
+/** 用户是否显式点过列头排序：默认为 false，此时搜索请求可以省略 sort。 */
+const sortExplicit = ref(false)
 const loading = ref(false)
 const error = ref<unknown>(null)
 const rows = ref<CorpusDocument[]>([])
@@ -56,12 +58,19 @@ async function fetchPage(): Promise<PagedResult<CorpusDocument>> {
   const params: CorpusQueryParams = {
     page: page.value,
     limit: pageSize.value,
-    sort: sortParam.value,
   }
 
-  // morrigan 的 match 参数走向量（语义）匹配，单次请求即可，分页与排序仍由服务端完成。
-  if (submittedKeyword.value)
+  // morrigan 的 match 参数走向量（语义）匹配，单次请求即可。
+  // 传了 match 时后端暂不支持与 sort 组合：默认排序省略 sort，只有用户显式指定排序字段才带上。
+  if (submittedKeyword.value) {
     params.match = submittedKeyword.value
+
+    if (sortExplicit.value)
+      params.sort = sortParam.value
+  }
+  else {
+    params.sort = sortParam.value
+  }
 
   const res = await fetchCorpusDocuments(params)
 
@@ -251,10 +260,12 @@ function handleSorterChange(sorter: DataTableSortState | DataTableSortState[] | 
   if (state?.order && field && SORTABLE_FIELDS.includes(field)) {
     sortField.value = field
     sortOrder.value = state.order
+    sortExplicit.value = true
   }
   else {
     sortField.value = DEFAULT_SORT_FIELD
     sortOrder.value = DEFAULT_SORT_ORDER
+    sortExplicit.value = false
   }
 
   page.value = 1

@@ -101,6 +101,7 @@ export default {
   },
   corpus: {
     title: 'Documentos del corpus',
+    backToChat: 'Volver al chat',
     entry: 'Documentos del corpus',
     searchPlaceholder: 'Buscar por título, sección o contenido',
     import: 'Importar CSV',

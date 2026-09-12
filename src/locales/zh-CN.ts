@@ -105,6 +105,7 @@ export default {
   },
   corpus: {
     title: '语料文档管理',
+    backToChat: '返回聊天',
     entry: '语料文档管理',
     searchPlaceholder: '搜索标题、小节或内容',
     import: '导入 CSV',

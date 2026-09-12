@@ -4,9 +4,11 @@ import type { CorpusSortField, CorpusSortOrder, PagedResult } from './utils'
 import type { CorpusDocument } from '@/api/corpus'
 import { NAlert, NButton, NDataTable, NInput, NPagination, NSpace, NTooltip, useDialog, useMessage } from 'naive-ui'
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { deleteCorpusDocument, fetchCorpusDocuments } from '@/api/corpus'
+import { SvgIcon } from '@/components/common'
 import { t } from '@/locales'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useChatStore } from '@/store'
 import DocumentDrawer from './components/DocumentDrawer.vue'
 import { corpusErrorKey, mergeCorpusSearch, paginate, sortCorpusDocuments } from './utils'
 
@@ -18,6 +20,8 @@ const DEFAULT_SORT_ORDER: CorpusSortOrder = 'descend'
 const SORTABLE_FIELDS: CorpusSortField[] = ['updated', 'created', 'heading']
 
 const authStore = useAuthStore()
+const chatStore = useChatStore()
+const router = useRouter()
 const dialog = useDialog()
 const message = useMessage()
 
@@ -133,6 +137,13 @@ function sortOrderFor(field: CorpusSortField) {
 function openDrawer(document: CorpusDocument) {
   activeDocument.value = document
   drawerVisible.value = true
+}
+
+function handleBackToChat() {
+  if (chatStore.active)
+    router.push({ name: 'Chat', params: { csid: chatStore.active } })
+  else
+    router.push({ name: 'Chat' })
 }
 
 function handleDelete(document: CorpusDocument) {
@@ -306,9 +317,17 @@ onUnmounted(() => {
 <template>
   <div class="flex flex-col h-full p-4 overflow-hidden md:p-6">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-medium">
-        {{ t('corpus.title') }}
-      </h2>
+      <div class="flex items-center gap-2">
+        <NButton quaternary size="small" @click="handleBackToChat">
+          <template #icon>
+            <SvgIcon icon="ri:arrow-left-line" />
+          </template>
+          {{ t('corpus.backToChat') }}
+        </NButton>
+        <h2 class="text-lg font-medium">
+          {{ t('corpus.title') }}
+        </h2>
+      </div>
       <NTooltip trigger="hover">
         <template #trigger>
           <div class="inline-flex">

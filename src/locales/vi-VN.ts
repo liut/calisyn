@@ -104,6 +104,7 @@ export default {
   },
   corpus: {
     title: 'Quản lý tài liệu ngữ liệu',
+    backToChat: 'Quay lại trò chuyện',
     entry: 'Quản lý tài liệu ngữ liệu',
     searchPlaceholder: 'Tìm theo tiêu đề, mục hoặc nội dung',
     import: 'Nhập CSV',

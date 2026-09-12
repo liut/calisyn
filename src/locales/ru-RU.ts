@@ -104,6 +104,7 @@ export default {
   },
   corpus: {
     title: 'Документы корпуса',
+    backToChat: 'Вернуться в чат',
     entry: 'Документы корпуса',
     searchPlaceholder: 'Поиск по заголовку, разделу или содержимому',
     import: 'Импорт CSV',

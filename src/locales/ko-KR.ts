@@ -103,6 +103,7 @@ export default {
   },
   corpus: {
     title: '코퍼스 문서 관리',
+    backToChat: '채팅으로 돌아가기',
     entry: '코퍼스 문서 관리',
     searchPlaceholder: '제목, 섹션 또는 내용 검색',
     import: 'CSV 가져오기',

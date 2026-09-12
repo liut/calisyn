@@ -49,6 +49,12 @@ describe('sortCorpusDocuments', () => {
     expect(sortCorpusDocuments(documents, 'created', 'descend').map(item => item.id)).toEqual(['b', 'a'])
     expect(documents.map(item => item.id)).toEqual(['a', 'b'])
   })
+
+  it('treats a null timestamp (nullable backend column) like a missing one', () => {
+    const documents = [doc('nulled', { updatedAt: null }), doc('recent', { updatedAt: '2026-05-01T00:00:00Z' })]
+
+    expect(sortCorpusDocuments(documents, 'updated', 'descend').map(item => item.id)).toEqual(['recent', 'nulled'])
+  })
 })
 
 describe('paginate', () => {

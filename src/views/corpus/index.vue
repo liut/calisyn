@@ -41,7 +41,7 @@ const deletingId = ref<string | null>(null)
 
 const sortParam = computed(() => `${sortOrder.value === 'descend' ? '-' : ''}${sortField.value}`)
 
-function formatTime(value?: string) {
+function formatTime(value?: string | null) {
   if (!value)
     return '—'
 
@@ -249,7 +249,7 @@ const columns = computed<DataTableColumns<CorpusDocument>>(() => {
       width: 190,
       sorter: 'default',
       sortOrder: sortOrderFor('updated'),
-      render: row => formatTime(row.updatedAt ?? row.createdAt),
+      render: row => formatTime(row.updatedAt),
     },
   ]
 

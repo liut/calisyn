@@ -4,7 +4,7 @@ export type CorpusSortField = 'updated' | 'created' | 'heading'
 
 export type CorpusSortOrder = 'ascend' | 'descend'
 
-function timeValue(value?: string): number {
+function timeValue(value?: string | null): number {
   if (!value)
     return 0
 

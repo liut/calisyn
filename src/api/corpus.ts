@@ -5,8 +5,8 @@ export interface CorpusDocument {
   title: string
   heading: string
   content: string
-  createdAt?: string
-  updatedAt?: string
+  createdAt?: string | null
+  updatedAt?: string | null
   creatorID?: string
   meta?: Record<string, unknown>
 }

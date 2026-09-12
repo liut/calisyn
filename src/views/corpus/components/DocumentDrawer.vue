@@ -52,7 +52,7 @@ watch(() => props.show, (visible) => {
     resetForm()
 })
 
-function formatTime(value?: string) {
+function formatTime(value?: string | null) {
   if (!value)
     return '—'
 

@@ -1,4 +1,8 @@
-# pnpm 10+ reads build-script approvals from here (package.json's pnpm field is ignored).
+# pnpm 11 用 allowBuilds 映射，pnpm 10 用 onlyBuiltDependencies 列表；
+# package.json 里的 pnpm 字段不再生效。两者同时保留以兼容不同 pnpm 版本。
+allowBuilds:
+  esbuild: true
+  vue-demi: true
 onlyBuiltDependencies:
   - esbuild
   - vue-demi

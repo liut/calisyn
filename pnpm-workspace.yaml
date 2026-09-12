@@ -1,0 +1,4 @@
+# pnpm 10+ reads build-script approvals from here (package.json's pnpm field is ignored).
+onlyBuiltDependencies:
+  - esbuild
+  - vue-demi

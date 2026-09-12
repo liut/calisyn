@@ -5,7 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { deleteCorpusDocument, updateCorpusDocument } from '@/api/corpus'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
-import { corpusErrorKey } from '../utils'
+import { buildCorpusPatch, corpusErrorKey } from '../utils'
 
 const props = defineProps<{
   show: boolean
@@ -75,13 +75,20 @@ async function handleSave() {
   if (!doc || saving.value)
     return
 
+  const patch = buildCorpusPatch(doc, form.value)
+
+  if (Object.keys(patch).length === 0) {
+    close()
+    return
+  }
+
   saving.value = true
 
   try {
-    await updateCorpusDocument(doc.id, { ...form.value })
+    await updateCorpusDocument(doc.id, patch)
     message.success(t('common.saveSuccess'))
     // 保存成功才刷新列表行；失败时保留本地编辑内容，不关闭抽屉。
-    emit('saved', { ...doc, ...form.value })
+    emit('saved', { ...doc, ...patch })
     close()
   }
   catch (error) {

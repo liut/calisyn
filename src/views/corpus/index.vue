@@ -107,9 +107,8 @@ async function load() {
     if (token !== loadToken)
       return
 
+    // 保留上一次成功的数据：刷新失败（例如删除后的重载失败）不应清空列表。
     error.value = err
-    rows.value = []
-    total.value = 0
   }
   finally {
     if (token === loadToken)

@@ -1,7 +1,7 @@
 ---
 title: 语料文档管理面板
 type: feat
-status: active
+status: completed
 date: 2026-08-24
 origin: docs/brainstorms/2026-08-24-corpus-document-management-requirements.md
 ---

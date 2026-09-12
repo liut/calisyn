@@ -337,7 +337,7 @@ onMounted(load)
         :placeholder="t('corpus.searchPlaceholder')"
         @keydown.enter="handleEnterSearch"
       >
-        <template #suffix>
+        <template #prefix>
           <NTooltip trigger="hover">
             <template #trigger>
               <span

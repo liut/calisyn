@@ -3,7 +3,7 @@ import type { DataTableColumns, DataTableSortState } from 'naive-ui'
 import type { CorpusSortField, CorpusSortOrder, PagedResult } from './utils'
 import type { CorpusDocument, CorpusQueryParams } from '@/api/corpus'
 import { NAlert, NButton, NDataTable, NInput, NPagination, NSpace, NTooltip, useDialog, useMessage } from 'naive-ui'
-import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, h, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { deleteCorpusDocument, fetchCorpusDocuments } from '@/api/corpus'
 import { SvgIcon } from '@/components/common'
@@ -23,6 +23,7 @@ const dialog = useDialog()
 const message = useMessage()
 
 const keyword = ref('')
+const submittedKeyword = ref('')
 const page = ref(1)
 const pageSize = ref(20)
 const sortField = ref<CorpusSortField>(DEFAULT_SORT_FIELD)
@@ -52,7 +53,6 @@ function errorTip(err: unknown, fallbackKey: string) {
 }
 
 async function fetchPage(): Promise<PagedResult<CorpusDocument>> {
-  const query = keyword.value.trim()
   const params: CorpusQueryParams = {
     page: page.value,
     limit: pageSize.value,
@@ -60,8 +60,8 @@ async function fetchPage(): Promise<PagedResult<CorpusDocument>> {
   }
 
   // morrigan 的 match 参数走向量（语义）匹配，单次请求即可，分页与排序仍由服务端完成。
-  if (query)
-    params.match = query
+  if (submittedKeyword.value)
+    params.match = submittedKeyword.value
 
   const res = await fetchCorpusDocuments(params)
 
@@ -279,24 +279,20 @@ function rowProps(row: CorpusDocument) {
   }
 }
 
-let searchTimer: ReturnType<typeof setTimeout> | undefined
+/** 关键词搜索走向量匹配，一次请求要服务端做一次 embedding，因此不在输入过程中触发。 */
+function handleSearch() {
+  submittedKeyword.value = keyword.value.trim()
+  page.value = 1
+  load()
+}
 
-watch(keyword, () => {
-  if (searchTimer)
-    clearTimeout(searchTimer)
-
-  searchTimer = setTimeout(() => {
-    page.value = 1
-    load()
-  }, 300)
+watch(keyword, (value) => {
+  // 清空输入是明确的“回到全量列表”意图，立即生效；其余情况等回车或点搜索。
+  if (value.trim() === '')
+    handleSearch()
 })
 
 onMounted(load)
-
-onUnmounted(() => {
-  if (searchTimer)
-    clearTimeout(searchTimer)
-})
 </script>
 
 <template>
@@ -331,7 +327,11 @@ onUnmounted(() => {
         class="max-w-[320px]"
         clearable
         :placeholder="t('corpus.searchPlaceholder')"
+        @keyup.enter="handleSearch"
       />
+      <NButton size="small" @click="handleSearch">
+        {{ t('corpus.search') }}
+      </NButton>
       <span class="text-sm text-gray-500">{{ t('corpus.total', { total }) }}</span>
     </div>
 

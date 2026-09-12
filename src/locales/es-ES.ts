@@ -104,6 +104,7 @@ export default {
     backToChat: 'Volver al chat',
     entry: 'Documentos del corpus',
     searchPlaceholder: 'Buscar documentos (semántica)',
+    search: 'Buscar',
     import: 'Importar CSV',
     importDisabled: 'La importación en el servidor aún no está disponible',
     total: '{total} documentos',

@@ -108,6 +108,7 @@ export default {
     backToChat: '返回聊天',
     entry: '语料文档管理',
     searchPlaceholder: '搜索文档（语义匹配）',
+    search: '搜索',
     import: '导入 CSV',
     importDisabled: '后端导入方案尚未就绪，暂不可用',
     total: '共 {total} 条',

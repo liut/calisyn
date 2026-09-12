@@ -106,6 +106,7 @@ export default {
     backToChat: '채팅으로 돌아가기',
     entry: '코퍼스 문서 관리',
     searchPlaceholder: '문서 검색 (의미 기반)',
+    search: '검색',
     import: 'CSV 가져오기',
     importDisabled: '서버 가져오기 기능이 아직 준비되지 않았습니다',
     total: '총 {total}건',

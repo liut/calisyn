@@ -108,6 +108,7 @@ export default {
     backToChat: 'Back to chat',
     entry: 'Corpus Documents',
     searchPlaceholder: 'Search documents (semantic)',
+    search: 'Search',
     import: 'Import CSV',
     importDisabled: 'Server-side import is not ready yet',
     total: '{total} documents',

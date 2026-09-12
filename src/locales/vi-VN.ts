@@ -107,6 +107,7 @@ export default {
     backToChat: 'Quay lại trò chuyện',
     entry: 'Quản lý tài liệu ngữ liệu',
     searchPlaceholder: 'Tìm tài liệu (ngữ nghĩa)',
+    search: 'Tìm kiếm',
     import: 'Nhập CSV',
     importDisabled: 'Tính năng nhập phía máy chủ chưa sẵn sàng',
     total: 'Tổng {total} tài liệu',

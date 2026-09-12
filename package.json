@@ -79,6 +79,12 @@
     "vue-tsc": "^2.0.0",
     "yaml": "^2.0.0"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "vue-demi"
+    ]
+  },
   "lint-staged": {
     "*.{ts,tsx,vue}": [
       "pnpm lint:fix"

@@ -286,6 +286,14 @@ function handleSearch() {
   load()
 }
 
+/** 回车提交；输入法正在组词（确认候选词）时不触发。 */
+function handleEnterSearch(event: KeyboardEvent) {
+  if (event.isComposing)
+    return
+
+  handleSearch()
+}
+
 watch(keyword, (value) => {
   // 清空输入是明确的“回到全量列表”意图，立即生效；其余情况等回车或点搜索。
   if (value.trim() === '')
@@ -327,11 +335,22 @@ onMounted(load)
         class="max-w-[320px]"
         clearable
         :placeholder="t('corpus.searchPlaceholder')"
-        @keyup.enter="handleSearch"
-      />
-      <NButton size="small" @click="handleSearch">
-        {{ t('corpus.search') }}
-      </NButton>
+        @keydown.enter="handleEnterSearch"
+      >
+        <template #suffix>
+          <NTooltip trigger="hover">
+            <template #trigger>
+              <span
+                class="text-base text-[#4f555e] cursor-pointer dark:text-white hover:text-[#4b9e5f]"
+                @click="handleSearch"
+              >
+                <SvgIcon icon="ri:search-line" />
+              </span>
+            </template>
+            {{ t('corpus.search') }}
+          </NTooltip>
+        </template>
+      </NInput>
       <span class="text-sm text-gray-500">{{ t('corpus.total', { total }) }}</span>
     </div>
 

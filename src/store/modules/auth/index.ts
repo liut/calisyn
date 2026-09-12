@@ -10,6 +10,7 @@ interface SessionResponse {
   showAdvanced?: boolean
   user?: UserInfo
   uri?: string // login URI
+  keeper?: boolean // whether the current user has keeper (advanced corpus management) permission
 }
 
 export interface AuthState {
@@ -26,6 +27,10 @@ export const useAuthStore = defineStore('auth-store', {
   getters: {
     hasAdvanced(state): boolean {
       return state.session?.showAdvanced ?? false
+    },
+
+    isKeeper(state): boolean {
+      return state.session?.keeper ?? false
     },
   },
 

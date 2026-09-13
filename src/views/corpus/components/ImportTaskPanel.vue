@@ -7,6 +7,7 @@ import { fetchCorpusImports } from '@/api/corpus'
 import { t } from '@/locales'
 import {
   activeImportCount,
+  hasUnobservedImports,
   importStatusKey,
   importSummaryParams,
   isImportTaskActive,
@@ -42,6 +43,10 @@ const uploadVisible = ref(false)
 const detailVisible = ref(false)
 const activeTask = ref<CorpusImportTask | null>(null)
 
+/** 可见列表里的进行中任务数；被筛选/翻页藏住时由探测补上。 */
+const listActiveCount = ref(0)
+const probeActiveCount = ref(0)
+
 /** 本会话中观察到过的「进行中」任务：只有它们进入终态才提示，历史任务不打扰 keeper。 */
 const watchedIds = new Set<string>()
 /** 已经提示过完成摘要的任务，轮询多次返回同一终态不会重复提示（R12）。 */
@@ -57,7 +62,11 @@ const statusOptions = computed(() => [
 
 /** 递增请求序号：筛选、翻页与轮询可能同时在飞，只接受最后一次发起的响应。 */
 let loadToken = 0
+/** 探测请求单独计数：探测结果不写入列表，不能和列表请求互相作废。 */
+let probeToken = 0
 let pollTimer: ReturnType<typeof setInterval> | null = null
+/** 组件卸载后不再重启定时器：在飞的请求可能晚于卸载返回并再次调用 syncPolling。 */
+let disposed = false
 
 function statusTagType(status: CorpusImportTaskStatus) {
   if (status === 'succeeded')
@@ -152,9 +161,27 @@ function stopPolling() {
   }
 }
 
-/** 只有列表里存在排队中/处理中任务时才周期性刷新，全部进入终态即停（R10）。 */
+function reportActiveCount() {
+  emit('update:activeCount', Math.max(listActiveCount.value, probeActiveCount.value))
+}
+
+/** 当前查询是否覆盖最新任务：不筛选且在第一页。此时可见列表就是权威数据源。 */
+function queryCoversLatest() {
+  return statusFilter.value === '' && page.value === 1
+}
+
+/**
+ * 只有存在排队中/处理中任务时才周期性刷新，全部进入终态即停（R10）。
+ * 「本会话见过但还没看到终态」的任务也算活跃：它可能正被筛选或翻页藏住。
+ */
 function syncPolling() {
-  if (activeImportCount(rows.value) === 0) {
+  if (disposed)
+    return
+
+  const hasActive = Math.max(listActiveCount.value, probeActiveCount.value) > 0
+    || hasUnobservedImports(watchedIds, notifiedIds)
+
+  if (!hasActive) {
     stopPolling()
     return
   }
@@ -165,15 +192,15 @@ function syncPolling() {
   pollTimer = setInterval(() => {
     // 上一次请求还没回来就跳过这一轮，避免响应互相覆盖。
     if (!loading.value)
-      load()
+      poll()
   }, POLL_INTERVAL)
 }
 
 /** 只为本会话见过「进行中」的任务提示完成摘要，历史任务不打扰 keeper（R12）。 */
-function reportFinished() {
+function reportFinished(source: CorpusImportTask[]) {
   const candidates: CorpusImportTask[] = []
 
-  for (const task of rows.value) {
+  for (const task of source) {
     if (isImportTaskActive(task.status))
       watchedIds.add(task.id)
     else if (watchedIds.has(task.id))
@@ -185,6 +212,39 @@ function reportFinished() {
     message.success(t('corpus.importCompleted', importSummaryParams(task)))
     emit('finished', task)
   }
+}
+
+/**
+ * 当前查询可能藏住正在跑的任务（筛选、或翻到别的页）时，补一次
+ * 「全部 + 第一页」探测。否则轮询会停、完成摘要与跨视图提示都会丢（R10/R11/R18）。
+ */
+async function probeActivity() {
+  const token = ++probeToken
+
+  try {
+    const res = await fetchCorpusImports({ page: 1, limit: pageSize.value, sort: DEFAULT_SORT })
+
+    if (token !== probeToken)
+      return
+
+    const probed = res.result?.data ?? []
+
+    probeActiveCount.value = activeImportCount(probed)
+    reportActiveCount()
+    reportFinished(probed)
+    syncPolling()
+  }
+  catch {
+    // 探测失败不额外打扰：列表自身的错误提示已经足够，下一个 tick 会再试。
+    syncPolling()
+  }
+}
+
+async function poll() {
+  await load()
+
+  if (hasUnobservedImports(watchedIds, notifiedIds) && !queryCoversLatest())
+    await probeActivity()
 }
 
 async function load() {
@@ -206,8 +266,14 @@ async function load() {
 
     rows.value = res.result?.data ?? []
     total.value = res.result?.total ?? 0
-    emit('update:activeCount', activeImportCount(rows.value))
-    reportFinished()
+    listActiveCount.value = activeImportCount(rows.value)
+
+    // 可见列表覆盖最新任务时它就是权威数据源，清掉上次探测的残留计数。
+    if (queryCoversLatest())
+      probeActiveCount.value = 0
+
+    reportActiveCount()
+    reportFinished(rows.value)
     syncPolling()
   }
   catch (err) {
@@ -268,7 +334,13 @@ function handleCreated(task: CorpusImportTask | undefined) {
 
 onMounted(load)
 
-onUnmounted(stopPolling)
+onUnmounted(() => {
+  disposed = true
+  // 作废在飞请求，避免卸载后回填状态或重启轮询。
+  loadToken++
+  probeToken++
+  stopPolling()
+})
 </script>
 
 <template>

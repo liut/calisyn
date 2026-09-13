@@ -134,6 +134,15 @@ function csvField(value: string) {
 }
 
 /**
+ * 表格软件会把以 = + - @ 开头的单元格当公式执行（CSV 注入）。原因列来自服务端，
+ * 且重新上传时被当作额外列忽略，因此加前缀不会污染再次导入的数据；标题列不加，
+ * 加了会在重传时把前缀写进文档标题。
+ */
+function csvFormulaSafe(value: string) {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+}
+
+/**
  * 上传前预校验：返回 i18n key，通过则返回 null。
  * 口径与 morrigan 对齐，服务端的 400/413 仍作为兜底。
  */
@@ -180,6 +189,24 @@ export function showsImportCounts(status: CorpusImportTaskStatus): boolean {
 
 export function activeImportCount(tasks: CorpusImportTask[]): number {
   return tasks.filter(task => isImportTaskActive(task.status)).length
+}
+
+/**
+ * 本会话观察到过的任务里，是否还有没观察到终态的。
+ *
+ * 用于轮询活性判断：任务一旦被状态筛选或翻页藏住，列表本身既报不出活跃数量，
+ * 也观察不到终态，只有这个信号能让轮询继续跑下去。
+ */
+export function hasUnobservedImports(
+  watchedIds: ReadonlySet<string>,
+  notifiedIds: ReadonlySet<string>,
+): boolean {
+  for (const id of watchedIds) {
+    if (!notifiedIds.has(id))
+      return true
+  }
+
+  return false
 }
 
 /**
@@ -288,7 +315,7 @@ export function buildImportFailureCsv(
       '',
       '',
       csvField(String(row.line ?? '')),
-      csvField(row.reason ?? ''),
+      csvField(csvFormulaSafe(row.reason ?? '')),
     ].join(','))
   }
 

@@ -156,6 +156,7 @@ export default {
     importDetailEmpty: 'Không có dòng thất bại hoặc bỏ qua',
     importDetailTruncated: 'Chỉ hiển thị {shown} trong {total} dòng',
     importExportFailedRows: 'Tải dòng thất bại (CSV)',
+    importExportHint: 'Tệp xuất chỉ có tiêu đề, số dòng và lý do — hãy bổ sung heading và content trước khi tải lên lại.',
     importExportEmpty: 'Không có dòng thất bại để xuất',
     importClose: 'Đóng',
     total: 'Tổng {total} tài liệu',

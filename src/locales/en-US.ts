@@ -157,6 +157,7 @@ export default {
     importDetailEmpty: 'No failed or skipped rows',
     importDetailTruncated: 'Showing the first {shown} of {total}',
     importExportFailedRows: 'Download failed rows (CSV)',
+    importExportHint: 'The export carries only title, line and reason — fill in heading and content before uploading it again.',
     importExportEmpty: 'No failed rows to export',
     importClose: 'Close',
     total: '{total} documents',

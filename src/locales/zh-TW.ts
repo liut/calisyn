@@ -157,6 +157,7 @@ export default {
     importDetailEmpty: '沒有失敗或跳過的明細',
     importDetailTruncated: '僅顯示前 {shown} 筆，共 {total} 筆',
     importExportFailedRows: '下載失敗列 CSV',
+    importExportHint: '匯出檔只帶標題、列號與原因，重新上傳前需要補齊 heading 與 content。',
     importExportEmpty: '沒有可匯出的失敗列',
     importClose: '關閉',
     total: '共 {total} 筆',

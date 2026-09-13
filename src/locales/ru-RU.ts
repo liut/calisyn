@@ -156,6 +156,7 @@ export default {
     importDetailEmpty: 'Нет ошибочных или пропущенных строк',
     importDetailTruncated: 'Показаны первые {shown} из {total}',
     importExportFailedRows: 'Скачать ошибочные строки (CSV)',
+    importExportHint: 'В файле есть только заголовок, строка и причина — заполните heading и content перед повторной загрузкой.',
     importExportEmpty: 'Нет ошибочных строк для экспорта',
     importClose: 'Закрыть',
     total: 'Всего: {total}',

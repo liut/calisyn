@@ -7,6 +7,7 @@ import {
   classifyImportFailures,
   decodeImportBytes,
   hasImportHeader,
+  hasUnobservedImports,
   IMPORT_FAILURE_CSV_HEADER,
   IMPORT_MAX_SIZE,
   IMPORT_TEMPLATE_CSV,
@@ -127,6 +128,13 @@ describe('task status helpers', () => {
     expect(activeImportCount(tasks)).toBe(2)
     expect(newlyFinishedImports(tasks, new Set(['c'])).map(t => t.id)).toEqual(['d'])
     expect(newlyFinishedImports(tasks, new Set(['c', 'd']))).toEqual([])
+  })
+
+  it('reports whether a watched task still has no observed terminal state', () => {
+    expect(hasUnobservedImports(new Set(['a']), new Set())).toBe(true)
+    expect(hasUnobservedImports(new Set(['a', 'b']), new Set(['a']))).toBe(true)
+    expect(hasUnobservedImports(new Set(['a', 'b']), new Set(['a', 'b']))).toBe(false)
+    expect(hasUnobservedImports(new Set(), new Set())).toBe(false)
   })
 })
 
@@ -249,6 +257,19 @@ describe('buildImportFailureCsv', () => {
 
     expect(csv).toContain('"a,b"')
     expect(csv).toContain('"say ""hi""\nagain"')
+  })
+
+  it('neutralises spreadsheet formulas in the reason column but keeps titles untouched', () => {
+    const csv = buildImportFailureCsv(task({
+      failed: 1,
+      errors: [failure({ line: 8, title: '=SUM(A1)', reason: '=cmd|\' /C calc\'!A1' })],
+    }))
+
+    // 原因列是服务端返回、重传时被忽略的额外列，加前缀不会影响再次导入
+    expect(csv).toContain(`'=cmd|' /C calc'!A1`)
+    // 标题会随重传写回文档，必须原样保留
+    expect(csv).toContain('=SUM(A1)')
+    expect(csv).not.toContain(`'=SUM(A1)`)
   })
 
   it('produces nothing when there is no failure row to export', () => {

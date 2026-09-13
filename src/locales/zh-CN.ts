@@ -157,6 +157,7 @@ export default {
     importDetailEmpty: '没有失败或跳过的明细',
     importDetailTruncated: '仅展示前 {shown} 条，共 {total} 条',
     importExportFailedRows: '下载失败行 CSV',
+    importExportHint: '导出文件只带标题、行号与原因，重新上传前需要补齐 heading 与 content。',
     importExportEmpty: '没有可导出的失败行',
     importClose: '关闭',
     total: '共 {total} 条',

@@ -153,6 +153,7 @@ export default {
     importDetailEmpty: 'No hay filas fallidas ni omitidas',
     importDetailTruncated: 'Mostrando las primeras {shown} de {total}',
     importExportFailedRows: 'Descargar filas fallidas (CSV)',
+    importExportHint: 'La exportación solo incluye título, línea y motivo: completa heading y content antes de volver a subirla.',
     importExportEmpty: 'No hay filas fallidas que exportar',
     importClose: 'Cerrar',
     total: '{total} documentos',

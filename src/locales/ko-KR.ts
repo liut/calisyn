@@ -155,6 +155,7 @@ export default {
     importDetailEmpty: '실패하거나 건너뛴 행이 없습니다',
     importDetailTruncated: '전체 {total}건 중 처음 {shown}건만 표시',
     importExportFailedRows: '실패 행 CSV 다운로드',
+    importExportHint: '내보낸 파일에는 제목, 행 번호, 사유만 있습니다. 다시 업로드하기 전에 heading과 content를 채워 주세요.',
     importExportEmpty: '내보낼 실패 행이 없습니다',
     importClose: '닫기',
     total: '총 {total}건',

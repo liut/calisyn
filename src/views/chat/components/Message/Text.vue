@@ -1,9 +1,9 @@
 <script lang="ts" setup>
+import type mermaid from 'mermaid'
 import MdKatex from '@vscode/markdown-it-katex'
 import hljs from 'highlight.js'
 import MarkdownIt from 'markdown-it'
 import MdLinkAttributes from 'markdown-it-link-attributes'
-import type mermaid from 'mermaid'
 import { computed, onMounted, onUnmounted, onUpdated, ref, watch } from 'vue'
 import { SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
@@ -67,8 +67,10 @@ function simpleHash(str: string): string {
 }
 
 async function ensureMermaid(): Promise<void> {
-  if (mermaidModule.value) return
-  if (mermaidLoading) return mermaidLoading
+  if (mermaidModule.value)
+    return
+  if (mermaidLoading)
+    return mermaidLoading
   mermaidLoading = import('mermaid').then((mod) => {
     mermaidModule.value = mod.default
     mermaidModule.value.initialize({ startOnLoad: false, suppressErrorRendering: true })
@@ -93,7 +95,8 @@ watch(mermaidModule, (mod) => {
 // 流式输出期间延迟渲染：等 chunk 更新停止 400ms 后才渲染，避免闪烁和语法错误
 let mermaidDebounce: ReturnType<typeof setTimeout> | null = null
 function scheduleMermaidRender() {
-  if (mermaidDebounce) clearTimeout(mermaidDebounce)
+  if (mermaidDebounce)
+    clearTimeout(mermaidDebounce)
   mermaidDebounce = setTimeout(() => {
     mermaidDebounce = null
     renderMermaidInDOM()
@@ -103,20 +106,24 @@ function scheduleMermaidRender() {
 // 查找 DOM 中的 mermaid 代码块并渲染为 SVG
 function renderMermaidInDOM() {
   const mod = mermaidModule.value
-  if (!mod || !textRef.value) return
+  if (!mod || !textRef.value)
+    return
 
   const codeEls = Array.from(textRef.value.querySelectorAll<HTMLElement>('code.code-block-body.mermaid'))
   for (const codeEl of codeEls) {
     const preEl = codeEl.closest('pre')
-    if (!preEl) continue
+    if (!preEl)
+      continue
 
     const code = codeEl.textContent || ''
     const hash = simpleHash(code)
 
-    if (preEl.dataset.mermaidRendering === hash) continue
+    if (preEl.dataset.mermaidRendering === hash)
+      continue
     preEl.dataset.mermaidRendering = hash
     mod.render(`mermaid-${hash}`, code).then(({ svg }: { svg: string }) => {
-      if (!preEl.isConnected) return
+      if (!preEl.isConnected)
+        return
       const wrapper = document.createElement('div')
       wrapper.className = 'mermaid-container'
       wrapper.innerHTML = svg

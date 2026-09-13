@@ -2,6 +2,7 @@ import type { GenericAbortSignal } from 'axios'
 import { SSE } from 'sse.js'
 import { useAuthStore, useSettingStore } from '@/store'
 import { get, patch, post } from '@/utils/request'
+import { redirectToLogin } from '@/utils/request/unauthorized'
 
 export function authLogout() {
   return get({
@@ -148,10 +149,9 @@ export function fetchChatStream(
 
     // 处理错误
     const handleError = (event: Event) => {
-      // 检查状态码，如果是401（未授权），则刷新页面
+      // 401（未授权，会话失效）跳转登录入口
       if (eventSource?.xhr?.status === 401) {
-        console.warn('Authentication failed (401), refreshing page...')
-        window.location.reload()
+        redirectToLogin()
         return
       }
 

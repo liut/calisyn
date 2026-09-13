@@ -1,6 +1,7 @@
 import type { AxiosResponse } from 'axios'
 import axios from 'axios'
 import { useAuthStore } from '@/store'
+import { redirectToLogin } from './unauthorized'
 
 const authHeader = import.meta.env.VITE_AUTH_HEADER || 'Authorization'
 
@@ -43,7 +44,10 @@ service.interceptors.response.use(
     throw new Error(response.status.toString())
   },
   (error) => {
-    // console.info('Response error:', error)
+    // 会话/网关鉴权失效（HTTP 401）：统一跳转登录入口，避免各调用方各自处理
+    if (error?.response?.status === 401)
+      redirectToLogin()
+
     return Promise.reject(error)
   },
 )

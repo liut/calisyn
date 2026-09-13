@@ -1,6 +1,7 @@
 import type { AxiosError, AxiosProgressEvent, AxiosResponse, GenericAbortSignal } from 'axios'
 import { useAuthStore } from '@/store'
 import request from './axios'
+import { redirectToLogin } from './unauthorized'
 
 export interface HttpOption {
   url: string
@@ -23,6 +24,12 @@ export interface Response<T = any> {
 function successHandler<T>(res: AxiosResponse<Response<T>>): Response<T> {
   const authStore = useAuthStore()
 
+  // HTTP 401（会话/网关鉴权失效）统一跳转登录入口
+  if (res.status === 401) {
+    redirectToLogin()
+    throw res.data
+  }
+
   if (
     (res.status >= 200 && res.status < 300)
     || res.data.status === 'Success'
@@ -31,7 +38,8 @@ function successHandler<T>(res: AxiosResponse<Response<T>>): Response<T> {
     return res.data
   }
 
-  if (res.status === 401 || res.data.status === 'Unauthorized') {
+  // 服务端以 200 + status=Unauthorized 表示密钥无效：清掉本地密钥，刷新后由 Permission 弹窗接管
+  if (res.data.status === 'Unauthorized') {
     authStore.removeToken()
     window.location.reload()
   }

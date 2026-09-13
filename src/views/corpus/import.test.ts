@@ -11,6 +11,7 @@ import {
   IMPORT_MAX_SIZE,
   IMPORT_TEMPLATE_CSV,
   importDetailCount,
+  importFailureGroupKey,
   importFailureRows,
   importStatusKey,
   importSummaryParams,
@@ -182,6 +183,12 @@ describe('classifyImportFailures', () => {
     }))
 
     expect(rows.map(row => [row.line, row.group])).toEqual([[3, 'skipped'], [4, 'failed']])
+  })
+
+  it('maps every group to its copy key', () => {
+    expect(importFailureGroupKey('failed')).toBe('corpus.importKindFailed')
+    expect(importFailureGroupKey('skipped')).toBe('corpus.importKindSkipped')
+    expect(importFailureGroupKey('unknown')).toBe('corpus.importKindUnknown')
   })
 })
 

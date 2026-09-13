@@ -163,6 +163,16 @@ export function importStatusKey(status: CorpusImportTaskStatus | string): string
   return IMPORT_STATUS_KEYS[status as CorpusImportTaskStatus] ?? String(status)
 }
 
+const FAILURE_GROUP_KEYS: Record<ImportFailureGroup, string> = {
+  failed: 'corpus.importKindFailed',
+  skipped: 'corpus.importKindSkipped',
+  unknown: 'corpus.importKindUnknown',
+}
+
+export function importFailureGroupKey(group: ImportFailureGroup): string {
+  return FAILURE_GROUP_KEYS[group]
+}
+
 /** 后端只在任务结束时写回计数，进行中展示计数会误导成「0 行成功」。 */
 export function showsImportCounts(status: CorpusImportTaskStatus): boolean {
   return isImportTaskFinished(status)

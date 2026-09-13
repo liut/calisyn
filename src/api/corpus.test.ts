@@ -1,16 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { deleteCorpusDocument, fetchCorpusDocuments, updateCorpusDocument } from './corpus'
+import { createCorpusImport, deleteCorpusDocument, fetchCorpusDocuments, fetchCorpusImport, fetchCorpusImports, updateCorpusDocument } from './corpus'
 
-const { getMock, putMock, delMock } = vi.hoisted(() => ({
+const { getMock, putMock, delMock, uploadMock } = vi.hoisted(() => ({
   getMock: vi.fn(),
   putMock: vi.fn(),
   delMock: vi.fn(),
+  uploadMock: vi.fn(),
 }))
 
 vi.mock('@/utils/request', () => ({
   get: getMock,
   put: putMock,
   del: delMock,
+  upload: uploadMock,
 }))
 
 describe('corpus API layer', () => {
@@ -64,5 +66,63 @@ describe('corpus API layer', () => {
 
     expect(delMock).toHaveBeenCalledWith({ url: '/corpus/documents/doc1' })
     expect(res.result).toBe('ok')
+  })
+})
+
+describe('corpus import API layer', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('createCorpusImport posts the selected file as the multipart `file` field', async () => {
+    uploadMock.mockResolvedValue({ status: 0, result: { id: 't1', status: 'pending' } })
+    const file = new File(['title,heading,content\n'], 'doc.csv', { type: 'text/csv' })
+
+    const res = await createCorpusImport(file)
+
+    expect(uploadMock).toHaveBeenCalledTimes(1)
+    const call = uploadMock.mock.calls[0][0] as { url: string, data: FormData, onUploadProgress?: unknown }
+    expect(call.url).toBe('/corpus/imports')
+    expect(call.data).toBeInstanceOf(FormData)
+    expect(call.data.get('file')).toBe(file)
+    expect(call.onUploadProgress).toBeUndefined()
+    expect(res.result?.id).toBe('t1')
+  })
+
+  it('createCorpusImport forwards the upload progress callback', async () => {
+    uploadMock.mockResolvedValue({ status: 0, result: { id: 't1' } })
+    const onUploadProgress = vi.fn()
+
+    await createCorpusImport(new File(['x'], 'doc.csv'), { onUploadProgress })
+
+    expect(uploadMock).toHaveBeenCalledWith(expect.objectContaining({ onUploadProgress }))
+  })
+
+  it('fetchCorpusImports passes query params to GET /corpus/imports', async () => {
+    getMock.mockResolvedValue({ status: 0, result: { data: [{ id: 't1', filename: 'a.csv', status: 'pending' }], total: 1 } })
+
+    const params = { page: 2, limit: 20, status: 'pending' as const, sort: '-created' }
+    const res = await fetchCorpusImports(params)
+
+    expect(getMock).toHaveBeenCalledWith({ url: '/corpus/imports', data: params })
+    expect(res.result?.total).toBe(1)
+  })
+
+  it('fetchCorpusImports tolerates a list response without details', async () => {
+    getMock.mockResolvedValue({ status: 0, result: { data: [{ id: 't1', filename: 'a.csv', status: 'processing', total: 0, success: 0, failed: 0, skipped: 0 }], total: 1 } })
+
+    const res = await fetchCorpusImports()
+
+    expect(getMock).toHaveBeenCalledWith({ url: '/corpus/imports', data: {} })
+    expect(res.result?.data[0].errors).toBeUndefined()
+  })
+
+  it('fetchCorpusImport GETs the task detail URL', async () => {
+    getMock.mockResolvedValue({ status: 0, result: { id: 't9', errors: [] } })
+
+    const res = await fetchCorpusImport('t9')
+
+    expect(getMock).toHaveBeenCalledWith({ url: '/corpus/imports/t9' })
+    expect(res.result?.id).toBe('t9')
   })
 })

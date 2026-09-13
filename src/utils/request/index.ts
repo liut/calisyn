@@ -8,6 +8,7 @@ export interface HttpOption {
   method?: string
   headers?: any
   onDownloadProgress?: (progressEvent: AxiosProgressEvent) => void
+  onUploadProgress?: (progressEvent: AxiosProgressEvent) => void
   signal?: GenericAbortSignal
   beforeRequest?: () => void
   afterRequest?: () => void
@@ -19,39 +20,44 @@ export interface Response<T = any> {
   status: string
 }
 
+function successHandler<T>(res: AxiosResponse<Response<T>>): Response<T> {
+  const authStore = useAuthStore()
+
+  if (
+    (res.status >= 200 && res.status < 300)
+    || res.data.status === 'Success'
+    || typeof res.data === 'string'
+  ) {
+    return res.data
+  }
+
+  if (res.status === 401 || res.data.status === 'Unauthorized') {
+    authStore.removeToken()
+    window.location.reload()
+  }
+
+  throw res.data
+}
+
+function failHandler(error: AxiosError<Response<Error>>): never {
+  // Prefer the server-provided message (e.g. "无权限" for 403) and keep the
+  // HTTP status so callers can distinguish 401/403 from generic failures.
+  const err = new Error(error?.response?.data?.message || error?.message || 'Error') as Error & {
+    status?: number
+    response?: AxiosResponse
+  }
+  err.status = error?.response?.status
+  err.response = error?.response
+  throw err
+}
+
 function http<T = any>(
   { url, data, method, headers, onDownloadProgress, signal, beforeRequest, afterRequest }: HttpOption,
 ) {
-  const successHandler = (res: AxiosResponse<Response<T>>) => {
-    const authStore = useAuthStore()
-
-    if (
-      (res.status >= 200 && res.status < 300)
-      || res.data.status === 'Success'
-      || typeof res.data === 'string'
-    ) {
-      return res.data
-    }
-
-    if (res.status === 401 || res.data.status === 'Unauthorized') {
-      authStore.removeToken()
-      window.location.reload()
-    }
-
-    return Promise.reject(res.data)
-  }
-
-  const failHandler = (error: AxiosError<Response<Error>>) => {
+  const onFail = (error: AxiosError<Response<Error>>) => {
     afterRequest?.()
-    // Prefer the server-provided message (e.g. "无权限" for 403) and keep the
-    // HTTP status so callers can distinguish 401/403 from generic failures.
-    const err = new Error(error?.response?.data?.message || error?.message || 'Error') as Error & {
-      status?: number
-      response?: AxiosResponse
-    }
-    err.status = error?.response?.status
-    err.response = error?.response
-    throw err
+
+    return failHandler(error)
   }
 
   beforeRequest?.()
@@ -61,18 +67,41 @@ function http<T = any>(
   const params = Object.assign(typeof data === 'function' ? data() : data ?? {}, {})
 
   if (method === 'GET')
-    return request.get(url, { params, signal, onDownloadProgress }).then(successHandler, failHandler)
+    return request.get(url, { params, signal, onDownloadProgress }).then(successHandler<T>, onFail)
 
   if (method === 'PATCH')
-    return request.patch(url, params, { headers, signal, onDownloadProgress }).then(successHandler, failHandler)
+    return request.patch(url, params, { headers, signal, onDownloadProgress }).then(successHandler<T>, onFail)
 
   if (method === 'PUT')
-    return request.put(url, params, { headers, signal, onDownloadProgress }).then(successHandler, failHandler)
+    return request.put(url, params, { headers, signal, onDownloadProgress }).then(successHandler<T>, onFail)
 
   if (method === 'DELETE')
-    return request.delete(url, { params, headers, signal, onDownloadProgress }).then(successHandler, failHandler)
+    return request.delete(url, { params, headers, signal, onDownloadProgress }).then(successHandler<T>, onFail)
 
-  return request.post(url, params, { headers, signal, onDownloadProgress }).then(successHandler, failHandler)
+  return request.post(url, params, { headers, signal, onDownloadProgress }).then(successHandler<T>, onFail)
+}
+
+/**
+ * 上传文件：直接把 `FormData` 交给 axios 发 POST，不走 `http()` 的 body 归一化
+ * （`Object.assign` 会把 FormData 摊平成普通对象，丢失文件内容）。
+ *
+ * 不要手工设置 `Content-Type`：multipart 的 boundary 必须由浏览器/axios 生成，
+ * 手写 `multipart/form-data` 会让服务端解析失败。
+ */
+export function upload<T = any>(
+  { url, data, headers, onUploadProgress, signal, beforeRequest, afterRequest }: HttpOption,
+): Promise<Response<T>> {
+  beforeRequest?.()
+
+  const onFail = (error: AxiosError<Response<Error>>) => {
+    afterRequest?.()
+
+    return failHandler(error)
+  }
+
+  return request
+    .post(url, data, { headers, signal, onUploadProgress })
+    .then(successHandler<T>, onFail)
 }
 
 export function get<T = any>(

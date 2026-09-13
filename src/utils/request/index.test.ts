@@ -157,7 +157,7 @@ describe('request/index.ts - response handling', () => {
 })
 
 describe('request/index.ts - Function exports', () => {
-  it.each(['get', 'post', 'patch', 'put', 'del'])('exports %s', async (name) => {
+  it.each(['get', 'post', 'patch', 'put', 'del', 'upload'])('exports %s', async (name) => {
     const mod = await importRequest()
     expect(typeof mod[name as keyof typeof mod]).toBe('function')
   })
@@ -165,5 +165,76 @@ describe('request/index.ts - Function exports', () => {
   it('defaults to post', async () => {
     const { default: requestDefault, post } = await importRequest()
     expect(requestDefault).toBe(post)
+  })
+})
+
+describe('request/index.ts - upload', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRequest.post.mockResolvedValue({ status: 200, data: { status: 'Success', data: { id: 't1' } } })
+  })
+
+  it('hands the FormData straight to axios without touching Content-Type', async () => {
+    const { upload } = await importRequest()
+    const form = new FormData()
+    form.append('file', new File(['title,heading,content\n'], 'doc.csv', { type: 'text/csv' }))
+
+    await upload({ url: '/corpus/imports', data: form })
+
+    expect(mockRequest.post).toHaveBeenCalledWith('/corpus/imports', form, {
+      headers: undefined,
+      signal: undefined,
+      onUploadProgress: undefined,
+    })
+    expect(mockRequest.post.mock.calls[0][1]).toBe(form)
+    expect(mockRequest.post.mock.calls[0][2].headers).toBeUndefined()
+  })
+
+  it('forwards onUploadProgress to axios', async () => {
+    const { upload } = await importRequest()
+    const onUploadProgress = vi.fn()
+
+    await upload({ url: '/corpus/imports', data: new FormData(), onUploadProgress })
+
+    expect(mockRequest.post).toHaveBeenCalledWith('/corpus/imports', expect.any(FormData), {
+      headers: undefined,
+      signal: undefined,
+      onUploadProgress,
+    })
+  })
+
+  it('calls beforeRequest and afterRequest hooks', async () => {
+    const { upload } = await importRequest()
+    const beforeRequest = vi.fn()
+    const afterRequest = vi.fn()
+
+    await upload({ url: '/corpus/imports', data: new FormData(), beforeRequest, afterRequest })
+
+    expect(beforeRequest).toHaveBeenCalledTimes(1)
+    expect(afterRequest).not.toHaveBeenCalled()
+  })
+
+  it('preserves the server message and HTTP status when the upload is rejected', async () => {
+    mockRequest.post.mockRejectedValue({
+      message: 'Request failed with status code 413',
+      response: { status: 413, data: { status: 413, message: '文件超过 10 MiB' } },
+    })
+
+    const { upload } = await importRequest()
+    const afterRequest = vi.fn()
+
+    await expect(upload({ url: '/corpus/imports', data: new FormData(), afterRequest })).rejects.toMatchObject({
+      message: '文件超过 10 MiB',
+      status: 413,
+    })
+    expect(afterRequest).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolves with the raw response body on success', async () => {
+    const { upload } = await importRequest()
+
+    const res = await upload({ url: '/corpus/imports', data: new FormData() })
+
+    expect(res).toEqual({ status: 'Success', data: { id: 't1' } })
   })
 })

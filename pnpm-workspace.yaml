@@ -1,3 +1,9 @@
+# 本仓库是单包结构，packages 只为让 workspace 文件合法：pnpm 9（CI 镜像
+# fhyx/nodejs:v22 自带的 9.15.9）遇到没有 packages 字段的 pnpm-workspace.yaml
+# 会直接报「packages field missing or empty」，config / install 都跑不起来。
+packages:
+  - .
+
 # pnpm 11 用 allowBuilds 映射，pnpm 10 用 onlyBuiltDependencies 列表；
 # package.json 里的 pnpm 字段不再生效。两者同时保留以兼容不同 pnpm 版本。
 allowBuilds:

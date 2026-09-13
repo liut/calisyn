@@ -118,6 +118,7 @@ export default {
     importTooLarge: 'El archivo no puede superar los 10 MiB',
     importInvalidEncoding: 'El archivo debe estar codificado en UTF-8',
     importInvalidHeader: 'El encabezado debe ser title,heading,content',
+    importReadFailed: 'No se pudo leer el archivo, vuelve a seleccionarlo',
     importSuccess: 'Tarea de importación creada',
     importFailed: 'Error al subir, inténtalo de nuevo',
     importActiveHint: '{count} tarea(s) de importación en curso',

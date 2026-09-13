@@ -122,6 +122,7 @@ export default {
     importTooLarge: '檔案不能超過 10 MiB',
     importInvalidEncoding: '檔案必須是 UTF-8 編碼',
     importInvalidHeader: '表頭必須是 title,heading,content',
+    importReadFailed: '檔案讀取失敗，請重新選擇',
     importSuccess: '已建立匯入任務',
     importFailed: '上傳失敗，請稍後重試',
     importActiveHint: '有 {count} 個匯入任務進行中',

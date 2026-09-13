@@ -122,6 +122,7 @@ export default {
     importTooLarge: 'File must be 10 MiB or smaller',
     importInvalidEncoding: 'File must be UTF-8 encoded',
     importInvalidHeader: 'Header must be title,heading,content',
+    importReadFailed: 'Could not read the file, please choose it again',
     importSuccess: 'Import task created',
     importFailed: 'Upload failed, please try again',
     importActiveHint: '{count} import task(s) in progress',

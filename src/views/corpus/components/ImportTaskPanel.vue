@@ -216,7 +216,9 @@ async function load() {
 
     // 保留上一次成功的数据：刷新失败不应清空列表。
     error.value = err
-    stopPolling()
+    // 单次轮询失败不能永久停掉刷新：只要列表里还有进行中任务就继续，
+    // 服务端恢复后状态能自己追上来（否则 keeper 会一直看到过期的进度）。
+    syncPolling()
   }
   finally {
     if (token === loadToken)
@@ -257,6 +259,8 @@ function handleCreated(task: CorpusImportTask | undefined) {
   if (task?.id) {
     watchedIds.add(task.id)
     page.value = 1
+    // 回到「全部」并回到第一页，新建任务才一定出现在列表里（AE1）。
+    statusFilter.value = ''
   }
 
   load()

@@ -87,7 +87,17 @@ async function selectFile(file: File) {
     return
   }
 
-  const bytes = await file.arrayBuffer()
+  let bytes: ArrayBuffer
+
+  try {
+    bytes = await file.arrayBuffer()
+  }
+  catch {
+    // 文件被移动/权限变化时读不到内容；不能留下「已选文件但没校验过」的可提交状态。
+    errorKey.value = 'corpus.importReadFailed'
+    return
+  }
+
   // FileReader.readAsText 会把非法字节替换成 U+FFFD，必须用严格解码判定编码。
   const text = decodeImportBytes(bytes)
 

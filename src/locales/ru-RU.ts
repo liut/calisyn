@@ -121,6 +121,7 @@ export default {
     importTooLarge: 'Файл не должен превышать 10 MiB',
     importInvalidEncoding: 'Файл должен быть в кодировке UTF-8',
     importInvalidHeader: 'Заголовок должен быть title,heading,content',
+    importReadFailed: 'Не удалось прочитать файл, выберите его снова',
     importSuccess: 'Задача импорта создана',
     importFailed: 'Не удалось загрузить, попробуйте позже',
     importActiveHint: 'Активных задач импорта: {count}',

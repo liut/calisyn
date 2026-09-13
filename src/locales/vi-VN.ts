@@ -121,6 +121,7 @@ export default {
     importTooLarge: 'Tệp không được vượt quá 10 MiB',
     importInvalidEncoding: 'Tệp phải được mã hóa UTF-8',
     importInvalidHeader: 'Dòng tiêu đề phải là title,heading,content',
+    importReadFailed: 'Không đọc được tệp, vui lòng chọn lại',
     importSuccess: 'Đã tạo tác vụ nhập',
     importFailed: 'Tải lên thất bại, vui lòng thử lại',
     importActiveHint: 'Đang có {count} tác vụ nhập',

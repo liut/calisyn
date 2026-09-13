@@ -120,6 +120,7 @@ export default {
     importTooLarge: '파일은 10 MiB를 넘을 수 없습니다',
     importInvalidEncoding: '파일은 UTF-8로 인코딩되어야 합니다',
     importInvalidHeader: '헤더는 title,heading,content 여야 합니다',
+    importReadFailed: '파일을 읽지 못했습니다. 다시 선택해 주세요',
     importSuccess: '가져오기 작업이 생성되었습니다',
     importFailed: '업로드에 실패했습니다. 다시 시도해 주세요',
     importActiveHint: '진행 중인 가져오기 작업 {count}개',

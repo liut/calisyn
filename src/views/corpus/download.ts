@@ -10,6 +10,11 @@ export function downloadCsv(filename: string, content: string) {
 
   link.href = url
   link.download = filename
+  link.style.display = 'none'
+  document.body.appendChild(link)
   link.click()
-  URL.revokeObjectURL(url)
+  link.remove()
+
+  // 立刻 revoke 会在部分 WebKit/Safari 上取消尚未开始的下载，延后一拍再释放。
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }

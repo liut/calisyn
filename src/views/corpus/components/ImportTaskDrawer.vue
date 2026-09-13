@@ -7,6 +7,7 @@ import { computed, h, ref, watch } from 'vue'
 import { fetchCorpusImport } from '@/api/corpus'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
+import { downloadCsv } from '../download'
 import {
   buildImportFailureCsv,
   hasImportFailureRows,
@@ -161,15 +162,7 @@ function handleExport() {
     return
   }
 
-  // BOM 让 Excel 正确识别 UTF-8；morrigan 上传时会剥离 BOM 再校验表头。
-  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-
-  link.href = url
-  link.download = `${(task.filename || 'corpus').replace(/\.csv$/i, '')}-failed.csv`
-  link.click()
-  URL.revokeObjectURL(url)
+  downloadCsv(`${(task.filename || 'corpus').replace(/\.csv$/i, '')}-failed.csv`, csv)
 }
 </script>
 

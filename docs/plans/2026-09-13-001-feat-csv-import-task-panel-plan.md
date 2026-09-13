@@ -1,7 +1,7 @@
 ---
 title: feat: CSV 导入任务面板
 type: feat
-status: active
+status: completed
 date: 2026-09-13
 origin: docs/brainstorms/2026-09-13-csv-import-task-panel-requirements.md
 ---

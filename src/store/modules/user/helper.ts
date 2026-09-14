@@ -5,6 +5,8 @@ const LOCAL_NAME = 'userStorage'
 export interface UserInfo {
   sub?: string
   uid?: string
+  /** 会话返回的用户标识，与技能 owner 同源，用于判定「我创建的」技能。 */
+  oid?: string
   avatar: string
   name: string
   description: string

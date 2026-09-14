@@ -21,6 +21,14 @@ function handleCorpusEntry() {
 
   router.push({ name: 'Corpus' })
 }
+
+// 技能页对所有登录用户开放：入口不带 keeper 限制，可见范围由服务端按频道与归属判定。
+function handleSkillEntry() {
+  if (isMobile.value)
+    appStore.setSiderCollapsed(true)
+
+  router.push({ name: 'Skills' })
+}
 </script>
 
 <template>
@@ -32,6 +40,12 @@ function handleCorpusEntry() {
     <HoverButton v-if="authStore.isKeeper" :tooltip="t('corpus.entry')" @click="handleCorpusEntry">
       <span class="text-xl text-[#4f555e] dark:text-white">
         <SvgIcon icon="ri:book-open-line" />
+      </span>
+    </HoverButton>
+
+    <HoverButton :tooltip="t('skill.entry')" @click="handleSkillEntry">
+      <span class="text-xl text-[#4f555e] dark:text-white">
+        <SvgIcon icon="ri:lightbulb-line" />
       </span>
     </HoverButton>
 

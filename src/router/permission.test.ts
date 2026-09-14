@@ -20,6 +20,7 @@ function createGuardRouter() {
         children: [
           { path: '/chat/:csid?', name: 'Chat', component: stub },
           { path: '/corpus', name: 'Corpus', component: stub },
+          { path: '/skills', name: 'Skills', component: stub },
         ],
       },
       { path: '/500', name: '500', component: stub },
@@ -37,6 +38,15 @@ describe('router - corpus route registration', () => {
     const corpus = root?.children?.find(route => route.name === 'Corpus')
 
     expect(corpus?.path).toBe('/corpus')
+  })
+})
+
+describe('router - skills route registration', () => {
+  it('registers /skills as a Root child named Skills', () => {
+    const root = routes.find(route => route.name === 'Root')
+    const skills = root?.children?.find(route => route.name === 'Skills')
+
+    expect(skills?.path).toBe('/skills')
   })
 })
 
@@ -84,5 +94,14 @@ describe('router/permission.ts - keeper guard', () => {
 
     expect(router.currentRoute.value.name).toBe('Chat')
     expect(router.currentRoute.value.params.csid).toBe('abc')
+  })
+
+  it('does not gate /skills on the keeper flag', async () => {
+    authStore.session = { auth: true, keeper: false }
+    const router = createGuardRouter()
+
+    await router.push('/skills')
+
+    expect(router.currentRoute.value.name).toBe('Skills')
   })
 })

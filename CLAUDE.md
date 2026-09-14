@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `AGENTS.md` is a symlink to this file — keep edits here.
 - Git commit messages are written in English: conventional-commit subject (e.g. `feat(skill): ...`), body lines at most 100 characters (commitlint's `body-max-line-length` rejects longer ones).
+- Documentation-only changes (this file, `docs/`, comments) are committed straight to `main` — no branch and no pull request. Code changes still go through a branch and a PR.
 
 ## Project Overview
 

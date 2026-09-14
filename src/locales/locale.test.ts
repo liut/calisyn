@@ -8,7 +8,7 @@ import zhCN from './zh-CN'
 import zhTW from './zh-TW'
 
 /** 以 zh-CN 为基准：任一语言漏键、多键或插值参数不一致，页面就会出现缺文案或原始 key。 */
-const messages: Record<string, { corpus: Record<string, string> }> = {
+const messages: Record<string, { corpus: Record<string, string>, skill: Record<string, string> }> = {
   'zh-CN': zhCN,
   'en-US': enUS,
   'zh-TW': zhTW,
@@ -39,6 +39,20 @@ describe('locale messages', () => {
     for (const [key, value] of Object.entries(zhCN.corpus) as [keyof typeof zhCN.corpus, string][]) {
       for (const [lang, message] of Object.entries(messages))
         expect(placeholders(message.corpus[key] as string), `${lang}.${key}`).toEqual(placeholders(value))
+    }
+  })
+
+  it('keeps the skill key set identical across languages', () => {
+    const base = Object.keys(zhCN.skill).sort()
+
+    for (const [lang, message] of Object.entries(messages))
+      expect(Object.keys(message.skill).sort(), lang).toEqual(base)
+  })
+
+  it('keeps the skill interpolation parameters aligned', () => {
+    for (const [key, value] of Object.entries(zhCN.skill) as [keyof typeof zhCN.skill, string][]) {
+      for (const [lang, message] of Object.entries(messages))
+        expect(placeholders(message.skill[key] as string), `${lang}.${key}`).toEqual(placeholders(value))
     }
   })
 })

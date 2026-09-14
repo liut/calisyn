@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Repo Conventions
+
+- `AGENTS.md` is a symlink to this file — keep edits here.
+- Git commit messages are written in English: conventional-commit subject (e.g. `feat(skill): ...`), body lines at most 100 characters (commitlint's `body-max-line-length` rejects longer ones).
+
 ## Project Overview
 
 Calisyn is an AI chat application with Vue 3 frontend and Express backend.

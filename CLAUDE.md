@@ -29,6 +29,10 @@ cd service && pnpm dev      # Backend (port 3002)
 pnpm build                  # Frontend only
 cd service && pnpm build    # Backend only
 
+# Test / type-check
+pnpm test                   # vitest run
+pnpm type-check             # vue-tsc --noEmit (CI runs this one)
+
 # Lint
 pnpm lint                   # Frontend lint
 pnpm lint:fix               # Frontend lint with auto-fix
@@ -47,9 +51,19 @@ cd service && pnpm lint     # Backend lint
   - `auth/` - authentication state
   - `user/` - user profile
   - `prompt/` - prompt templates
-- **API Layer**: `src/api/` - Axios-based API calls, proxied to backend
-- **Routing**: `src/router/` with permission guard
-- **i18n**: `src/locales/` - supports en-US, zh-CN, zh-TW, ko-KR, ru-RU, vi-VN
+- **API Layer**: `src/api/` - Axios-based API calls, proxied to backend. Chat/config talk to the
+  Express service; `/api/corpus/*` and `/api/skills` are served by the morrigan backend, whose
+  envelope is `{ status, result }` rather than `{ status, data }` (see the `as unknown as` casts in
+  `src/api/corpus.ts` and `src/api/skill.ts`).
+- **Routing**: `src/router/` with permission guard. The corpus page is keeper-only; the skill page
+  is open to every signed-in user.
+- **Pages outside chat**: `src/views/corpus/` (document + CSV import panels, keeper-only) and
+  `src/views/skill/` (skill list, create modal, detail drawer). Both hang off the Root layout, and
+  **every Root child page must be listed in `src/views/chat/layout/Layout.vue`** — that component
+  redirects to chat on mount for any route name it does not allow, so a new page silently bounces
+  back to the chat view when opened directly.
+- **i18n**: `src/locales/` - en-US, zh-CN, zh-TW, es-ES, ko-KR, ru-RU, vi-VN. `locale.test.ts` keeps
+  the key set and interpolation parameters identical across all seven, so add a key to every file.
 
 ### Backend (`/service/src`)
 
@@ -94,3 +108,6 @@ cd service && pnpm lint     # Backend lint
 - `service/src/llm/tools.ts` - Tool registry with `web_fetch` (SSRF protected)
 - `src/utils/request/axios.ts` - Axios instance with interceptors
 - `src/store/modules/chat/index.ts` - Chat state management
+- `src/api/skill.ts` - skill CRUD against morrigan (`/skills`, `/skills/{name}`)
+- `src/views/skill/` - skill page: list panel, create modal, detail drawer, and `utils.ts` holding
+  the pure validation / frontmatter compose-parse / diff-patch helpers used by those components

@@ -14,7 +14,7 @@ const chatStore = useChatStore()
 const authStore = useAuthStore()
 
 // 语料管理页与技能页是 Root 布局下的独立页面，不能被强制弹回聊天页。
-if (currentRoute.name !== 'Corpus' && currentRoute.name !== 'Skills')
+if (currentRoute.name !== 'Corpus' && currentRoute.name !== 'Skills' && currentRoute.name !== 'Memory')
   router.replace({ name: 'Chat', params: { csid: chatStore.active } })
 
 const { isMobile } = useBasicLayout()

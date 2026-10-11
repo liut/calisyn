@@ -2,15 +2,18 @@
 import type { CSSProperties } from 'vue'
 import { NButton, NLayoutSider, useDialog } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
-import { PromptStore, SvgIcon } from '@/components/common'
+import { useRouter } from 'vue-router'
+import { HoverButton, PromptStore, SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
-import { useAppStore, useChatStore } from '@/store'
+import { useAppStore, useAuthStore, useChatStore } from '@/store'
 import Footer from './Footer.vue'
 import List from './List.vue'
 
 const appStore = useAppStore()
 const chatStore = useChatStore()
+const authStore = useAuthStore()
+const router = useRouter()
 
 const dialog = useDialog()
 
@@ -41,6 +44,13 @@ function handleClearAll() {
         appStore.setSiderCollapsed(true)
     },
   })
+}
+
+// 顶部导航行：记忆 / 技能 / 语料库入口。语料库仅 keeper 可见。
+function navigateTo(name: 'Memory' | 'Skills' | 'Corpus') {
+  if (isMobile.value)
+    appStore.setSiderCollapsed(true)
+  router.push({ name })
 }
 
 const getMobileClass = computed<CSSProperties>(() => {
@@ -88,7 +98,26 @@ watch(
   >
     <div class="flex flex-col h-full" :style="mobileSafeArea">
       <main class="flex flex-col flex-1 min-h-0">
-        <div class="p-4">
+        <nav class="flex items-center justify-around px-2 pt-3 pb-1">
+          <HoverButton :tooltip="t('memory.entry')" @click="navigateTo('Memory')">
+            <span class="text-xl text-[#4f555e] dark:text-white">
+              <SvgIcon icon="ri:brain-line" />
+            </span>
+          </HoverButton>
+
+          <HoverButton :tooltip="t('skill.entry')" @click="navigateTo('Skills')">
+            <span class="text-xl text-[#4f555e] dark:text-white">
+              <SvgIcon icon="ri:lightbulb-line" />
+            </span>
+          </HoverButton>
+
+          <HoverButton v-if="authStore.isKeeper" :tooltip="t('corpus.entry')" @click="navigateTo('Corpus')">
+            <span class="text-xl text-[#4f555e] dark:text-white">
+              <SvgIcon icon="ri:book-open-line" />
+            </span>
+          </HoverButton>
+        </nav>
+        <div class="px-4 py-3">
           <NButton dashed block @click="handleAdd">
             {{ t('chat.newChatButton') }}
           </NButton>

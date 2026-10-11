@@ -26,6 +26,11 @@ export const routes: RouteRecordRaw[] = [
         name: 'Skills',
         component: () => import('@/views/skill/index.vue'),
       },
+      {
+        path: '/memories',
+        name: 'Memory',
+        component: () => import('@/views/memory/index.vue'),
+      },
     ],
   },
 

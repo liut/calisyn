@@ -21,6 +21,7 @@ function createGuardRouter() {
           { path: '/chat/:csid?', name: 'Chat', component: stub },
           { path: '/corpus', name: 'Corpus', component: stub },
           { path: '/skills', name: 'Skills', component: stub },
+          { path: '/memories', name: 'Memory', component: stub },
         ],
       },
       { path: '/500', name: '500', component: stub },
@@ -47,6 +48,15 @@ describe('router - skills route registration', () => {
     const skills = root?.children?.find(route => route.name === 'Skills')
 
     expect(skills?.path).toBe('/skills')
+  })
+})
+
+describe('router - memory route registration', () => {
+  it('registers /memories as a Root child named Memory', () => {
+    const root = routes.find(route => route.name === 'Root')
+    const memory = root?.children?.find(route => route.name === 'Memory')
+
+    expect(memory?.path).toBe('/memories')
   })
 })
 
@@ -96,6 +106,23 @@ describe('router/permission.ts - keeper guard', () => {
     expect(router.currentRoute.value.params.csid).toBe('abc')
   })
 
+  it('lets non-keeper users reach /memories', async () => {
+    authStore.session = { auth: true, keeper: false }
+    const router = createGuardRouter()
+
+    await router.push('/memories')
+
+    expect(router.currentRoute.value.name).toBe('Memory')
+  })
+
+  it('lets keeper users reach /memories', async () => {
+    authStore.session = { auth: true, keeper: true }
+    const router = createGuardRouter()
+
+    await router.push('/memories')
+
+    expect(router.currentRoute.value.name).toBe('Memory')
+  })
   it('does not gate /skills on the keeper flag', async () => {
     authStore.session = { auth: true, keeper: false }
     const router = createGuardRouter()

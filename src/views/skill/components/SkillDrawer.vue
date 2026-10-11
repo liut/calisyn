@@ -340,7 +340,7 @@ function handleDelete() {
           </template>
         </NAlert>
 
-        <div v-else-if="detail" class="flex flex-col gap-4 h-full min-h-0">
+        <div v-else-if="detail" class="flex flex-col gap-4 h-full min-h-0 overflow-y-auto">
           <div class="flex flex-col gap-1">
             <div class="flex flex-wrap items-center gap-2">
               <NText strong>
@@ -367,8 +367,8 @@ function handleDelete() {
             </NText>
           </div>
 
-          <!-- 元信息：七个元数据字段固定列出（空值给占位符），打开抽屉即可看全。 -->
-          <div v-if="metaRows.length" class="flex flex-col gap-1 pt-3 border-t dark:border-neutral-800">
+          <!-- 元信息：只读快照，仅在查看他人技能时展示；自己创建的技能由下方「元数据」编辑区承担。 -->
+          <div v-if="metaRows.length && !isOwn" class="flex flex-col gap-1 pt-3 border-t dark:border-neutral-800">
             <NText strong class="text-sm">
               {{ t('skill.recordMeta') }}
             </NText>
@@ -391,6 +391,8 @@ function handleDelete() {
             <NInput
               v-if="isOwn"
               v-model:value="form.description"
+              type="textarea"
+              :autosize="{ minRows: 3 }"
               :placeholder="t('skill.fieldDescriptionHint')"
               :disabled="saving"
             />
@@ -418,7 +420,7 @@ function handleDelete() {
             </template>
           </div>
 
-          <div class="flex flex-col flex-1 gap-1 min-h-0">
+          <div class="flex flex-col gap-1">
             <NText depth="3" class="text-xs">
               {{ t('skill.fieldContent') }}
             </NText>
@@ -426,12 +428,12 @@ function handleDelete() {
               v-if="isOwn"
               v-model:value="form.body"
               type="textarea"
-              :autosize="{ minRows: 10 }"
+              :autosize="{ minRows: 10, maxRows: 30 }"
               :disabled="saving"
             />
             <pre
               v-else
-              class="flex-1 p-2 m-0 overflow-auto text-sm whitespace-pre-wrap rounded bg-black/5 dark:bg-white/5"
+              class="p-2 m-0 overflow-auto text-sm whitespace-pre-wrap rounded bg-black/5 dark:bg-white/5"
             >{{ parsed?.body }}</pre>
           </div>
 

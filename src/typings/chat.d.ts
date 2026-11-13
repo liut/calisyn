@@ -4,6 +4,7 @@ declare namespace Chat {
     name: string
     arguments?: string
     id?: string
+    collapsed?: boolean // 是否折叠（单个调用级折叠态）
   }
 
   // 消息段落类型

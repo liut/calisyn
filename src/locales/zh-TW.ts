@@ -57,6 +57,7 @@ export default {
     thinking: '思考中...',
     thinkingWithDuration: '思考中 {seconds}秒',
     thoughtFor: '思考 {seconds}秒',
+    toolCall: '工具呼叫',
   },
   setting: {
     setting: '設定',

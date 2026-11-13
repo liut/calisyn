@@ -9,6 +9,7 @@ import { SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
 import { copyToClip } from '@/utils/copy'
+import { formatToolArguments, summarizeToolArguments } from '../../utils'
 
 interface Props {
   inversion?: boolean
@@ -25,6 +26,8 @@ const props = defineProps<Props>()
 
 // 思考段落的折叠状态管理
 const thinkCollapsedStates = ref<Map<number, boolean>>(new Map())
+// 工具调用的折叠状态管理（用户手动切换，优先于数据侧的自动策略）
+const toolCallCollapsedStates = ref<Map<string, boolean>>(new Map())
 // 思考段落的本地计时器（用于 loading 状态下的实时显示）
 const thinkLocalTimers = new Map<number, { startTime: number, duration: number, interval: number }>()
 // 用于触发视图刷新的 key
@@ -226,59 +229,27 @@ function escapeBrackets(text: string) {
   })
 }
 
-function formatArguments(args: string): string {
-  try {
-    const parsed = JSON.parse(args)
-    return formatValue(parsed)
-  }
-  catch {
-    return args
-  }
+// 工具调用折叠状态的键：段落下标 + 调用下标（无段落的历史消息用 -1）
+function toolCallStateKey(idx: number, tcIdx: number) {
+  return `${idx}-${tcIdx}`
 }
 
-// 递归格式化值，支持嵌套对象
-function formatValue(value: unknown, indent = 0): string {
-  if (value === null || value === undefined)
-    return String(value)
+// 切换工具调用的折叠状态（只改本地状态，不回写数据侧）
+function toggleToolCallCollapse(idx: number, tcIdx: number, tc: Chat.Tool) {
+  const key = toolCallStateKey(idx, tcIdx)
+  const currentState = toolCallCollapsedStates.value.get(key)
+  // 已有手动状态则取反，否则以数据侧的 collapsed 为基准取反
+  const newState = currentState !== undefined ? !currentState : !tc.collapsed
+  // 创建新的 Map 以触发响应式更新
+  const newMap = new Map(toolCallCollapsedStates.value)
+  newMap.set(key, newState)
+  toolCallCollapsedStates.value = newMap
+}
 
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
-    return String(value)
-
-  if (Array.isArray(value)) {
-    if (value.length === 0)
-      return '[]'
-    const items = value.map(item => formatValue(item, indent + 1))
-    if (indent === 0 || items.every(item => !item.includes('\n') && item.length < 30))
-      return `[${items.join(', ')}]`
-
-    return items.map(item => indent > 0 ? `${'  '.repeat(indent)}- ${item}` : item).join('\n')
-  }
-
-  if (typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>)
-    if (entries.length === 0)
-      return '{}'
-
-    const formattedEntries = entries.map(([key, val]) => {
-      const formattedVal = formatValue(val, indent + 1)
-      if (typeof val === 'object' && val !== null) {
-        // 嵌套对象显示为 key: {...} 或多行列出
-        if (formattedVal.includes('\n'))
-          return `${key}:\n${formattedVal}`
-
-        return `${key}: ${formattedVal}`
-      }
-      return `${key}: ${formattedVal}`
-    })
-
-    if (formattedEntries.length === 1 && !formattedEntries[0].includes('\n'))
-      return formattedEntries[0]
-
-    const prefix = indent > 0 ? '  '.repeat(indent) : ''
-    return formattedEntries.map(entry => `${prefix}${entry}`).join(', ')
-  }
-
-  return String(value)
+// 获取工具调用的折叠状态：手动状态优先，否则用数据侧的自动策略结果
+function isToolCallCollapsed(idx: number, tcIdx: number, tc: Chat.Tool): boolean {
+  const manualState = toolCallCollapsedStates.value.get(toolCallStateKey(idx, tcIdx))
+  return manualState !== undefined ? manualState : !!tc.collapsed
 }
 
 // 切换思考段落的折叠状态
@@ -437,15 +408,38 @@ onUnmounted(() => {
             <!-- 工具调用段落 -->
             <div v-else-if="chunk.type === 'tool_call'" class="mb-2 text-sm">
               <div v-if="chunk.toolCalls && chunk.toolCalls.length > 0">
-                <span
+                <div
                   v-for="(tc, tcIdx) in chunk.toolCalls"
                   :key="tcIdx"
-                  class="inline-flex items-center gap-1 mr-2"
+                  class="tool-call-item"
                 >
-                  <span class="text-gray-500 font-medium">{{ tc.name }}</span>
-                  <span class="text-[#4a9a4a] dark:text-[#3a8a3a]">{{ formatArguments(tc.arguments || '') }}</span>
-                  <span v-if="chunk.loading" class="text-gray-400 animate-pulse">...</span>
-                </span>
+                  <div
+                    class="tool-call-header flex w-full min-w-0 items-center gap-2 cursor-pointer select-none group"
+                    :title="t('chat.toolCall')"
+                    @click="toggleToolCallCollapse(idx, tcIdx, tc)"
+                  >
+                    <SvgIcon
+                      icon="ri:tools-line"
+                      class="shrink-0 text-[#c0b0a0] dark:text-[#706860] text-sm"
+                    />
+                    <SvgIcon
+                      :icon="isToolCallCollapsed(idx, tcIdx, tc) ? 'ri:arrow-right-s-line' : 'ri:arrow-down-s-line'"
+                      class="shrink-0 text-[#c0b0a0] dark:text-[#706860] text-sm group-hover:text-[#8a7a6a] dark:group-hover:text-[#a09078] transition-colors"
+                    />
+                    <span class="shrink-0 text-gray-500 font-medium">{{ tc.name }}</span>
+                    <span
+                      v-if="isToolCallCollapsed(idx, tcIdx, tc)"
+                      class="tool-call-summary flex-1 min-w-0 truncate text-[#4a9a4a] dark:text-[#3a8a3a]"
+                    >{{ summarizeToolArguments(tc.arguments || '') }}</span>
+                    <span v-if="chunk.loading" class="shrink-0 text-gray-400 animate-pulse">...</span>
+                  </div>
+                  <div
+                    v-show="!isToolCallCollapsed(idx, tcIdx, tc)"
+                    class="tool-call-content mt-2 w-full box-border px-3 py-2 border border-[#e0d5c8] dark:border-[#4a4538] rounded-lg bg-[#faf8f5] dark:bg-[#2a2618]"
+                  >
+                    <pre class="tool-call-args whitespace-pre-wrap break-words">{{ formatToolArguments(tc.arguments || '') }}</pre>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -462,14 +456,37 @@ onUnmounted(() => {
         <template v-else>
           <!-- 没有 chunks 时，渲染 toolCalls（如果有）然后渲染 text -->
           <div v-if="toolCalls && toolCalls.length > 0" class="mb-2 text-sm">
-            <span
+            <div
               v-for="(tc, tcIdx) in toolCalls"
               :key="tcIdx"
-              class="inline-flex items-center gap-1 mr-2"
+              class="tool-call-item"
             >
-              <span class="text-green-500 font-medium">{{ tc.name }}</span>
-              <span class="text-gray-500">{{ formatArguments(tc.arguments || '') }}</span>
-            </span>
+              <div
+                class="tool-call-header flex w-full min-w-0 items-center gap-2 cursor-pointer select-none group"
+                :title="t('chat.toolCall')"
+                @click="toggleToolCallCollapse(-1, tcIdx, tc)"
+              >
+                <SvgIcon
+                  icon="ri:tools-line"
+                  class="shrink-0 text-[#c0b0a0] dark:text-[#706860] text-sm"
+                />
+                <SvgIcon
+                  :icon="isToolCallCollapsed(-1, tcIdx, tc) ? 'ri:arrow-right-s-line' : 'ri:arrow-down-s-line'"
+                  class="shrink-0 text-[#c0b0a0] dark:text-[#706860] text-sm group-hover:text-[#8a7a6a] dark:group-hover:text-[#a09078] transition-colors"
+                />
+                <span class="shrink-0 text-green-500 font-medium">{{ tc.name }}</span>
+                <span
+                  v-if="isToolCallCollapsed(-1, tcIdx, tc)"
+                  class="tool-call-summary flex-1 min-w-0 truncate text-gray-500"
+                >{{ summarizeToolArguments(tc.arguments || '') }}</span>
+              </div>
+              <div
+                v-show="!isToolCallCollapsed(-1, tcIdx, tc)"
+                class="tool-call-content mt-2 w-full box-border px-3 py-2 border border-[#e0d5c8] dark:border-[#4a4538] rounded-lg bg-[#faf8f5] dark:bg-[#2a2618]"
+              >
+                <pre class="tool-call-args whitespace-pre-wrap break-words">{{ formatToolArguments(tc.arguments || '') }}</pre>
+              </div>
+            </div>
           </div>
           <template v-if="text">
             <div v-if="!asRawText" class="markdown-body" v-html="text" />

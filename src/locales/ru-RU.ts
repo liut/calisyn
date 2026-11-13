@@ -56,6 +56,7 @@ export default {
     thinking: 'Думаю...',
     thinkingWithDuration: 'Думаю {seconds}с',
     thoughtFor: 'Думал {seconds}с',
+    toolCall: 'Вызов инструмента',
   },
   setting: {
     setting: 'Настройки',

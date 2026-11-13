@@ -46,7 +46,7 @@ export interface StreamMessage {
   delta?: string
   think?: string
   text?: string
-  tool_calls?: Array<ToolCall>
+  toolCalls?: Array<ToolCall>
   finishReason?: string
   title?: string
 }

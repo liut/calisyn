@@ -53,6 +53,7 @@ export default {
     clearHistoryConfirm: '¿Estás seguro de borrar el historial de chat?',
     preview: 'Avance',
     showRawText: 'Mostrar como texto sin formato',
+    toolCall: 'Llamada a herramienta',
   },
   setting: {
     setting: 'Configuración',

@@ -16,6 +16,7 @@ import HeaderComponent from './components/Header/index.vue'
 import { useChat } from './hooks/useChat'
 import { useScroll } from './hooks/useScroll'
 import { useUsingContext } from './hooks/useUsingContext'
+import { applyToolCalls, finishToolCallRound, isToolCallFinishReason } from './utils'
 
 const controller: AbortController | null = null
 
@@ -64,10 +65,6 @@ function createSSEHandler(options: SSEHandlerOptions) {
   // 状态变量
   let chunks: Chat.MessageChunk[] = []
   let currentMessage = originalMessage
-  // 记录上一个 delta（用于去重）
-  let lastDelta = ''
-  // 记录上一个 think（用于去重）
-  let lastThink = ''
   // 记录流锁定的 csid：在整个流生命周期内固定为发起时的 csid，
   // updateCsid 触发后切到 newCsid（不再清空），所有写入都走它。
   let originalCsid = csid
@@ -82,7 +79,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
       return
 
     // 忽略空消息（但允许只有 finishReason 或 title 的消息，用于更新标题等）
-    const hasContent = (data.tool_calls && data.tool_calls.length > 0) || data.delta || data.think || data.text || data.finishReason || data.title
+    const hasContent = (data.toolCalls && data.toolCalls.length > 0) || data.delta || data.think || data.text || data.finishReason || data.title
     if (!hasContent)
       return
 
@@ -94,8 +91,8 @@ function createSSEHandler(options: SSEHandlerOptions) {
       originalCsid = data.csid
     }
 
-    // 处理工具调用数据：创建 tool_call 段落
-    if (data.tool_calls && data.tool_calls.length > 0) {
+    // 处理工具调用数据：新一轮另起段落，同一轮并入上一个段落
+    if (data.toolCalls && data.toolCalls.length > 0) {
       // 将之前的文本段落标记为已完成
       chunks = chunks.map((chunk) => {
         if (chunk.type === 'text' || chunk.type === 'think')
@@ -104,42 +101,11 @@ function createSSEHandler(options: SSEHandlerOptions) {
         return chunk
       })
 
-      const toolCallData = data.tool_calls.map(tc => ({
-        id: tc.id || '',
-        name: tc.function?.name || '',
-        arguments: tc.function?.arguments || '',
-      }))
-
-      // 检查是否已有 tool_call 段落，避免重复创建
-      const lastChunk = chunks[chunks.length - 1]
-      if (lastChunk && lastChunk.type === 'tool_call') {
-        // 更新现有工具调用
-        chunks[chunks.length - 1] = {
-          type: 'tool_call',
-          content: '',
-          toolCalls: toolCallData,
-          loading: true,
-        }
-      }
-      else {
-        // 创建新的工具调用段落
-        chunks.push({
-          type: 'tool_call',
-          content: '',
-          toolCalls: toolCallData,
-          loading: true,
-        })
-      }
+      chunks = applyToolCalls(chunks, data.toolCalls, data.finishReason)
     }
 
     // 处理思考内容
     if (data.think) {
-      // 去重
-      if (data.think === lastThink)
-        return
-
-      lastThink = data.think
-
       const lastChunk = chunks[chunks.length - 1]
       if (lastChunk && lastChunk.type === 'think') {
         // 追加到现有思考段落，默认保持展开状态（loading 时）
@@ -164,12 +130,6 @@ function createSSEHandler(options: SSEHandlerOptions) {
     // 处理文本
     if (data.delta || data.text) {
       const text = data.delta || data.text || ''
-
-      // 去重
-      if (text === lastDelta)
-        return
-
-      lastDelta = text
 
       // 当收到正式回复内容时，将 think 段落标记为加载完成
       // 并延迟 1.5 秒后折叠，让用户有时间看到思考过程
@@ -277,37 +237,48 @@ function createSSEHandler(options: SSEHandlerOptions) {
         return true
       }
       else if (data.finishReason) {
-        // 清理延迟折叠定时器
-        if (thinkCollapseTimer) {
-          clearTimeout(thinkCollapseTimer)
-          thinkCollapseTimer = null
+        if (isToolCallFinishReason(data.finishReason)) {
+          // 本轮工具调用结束：只结束该轮并自动折叠，
+          // 整条消息仍在继续（agent 循环还有后续轮次），不熄灭加载态
+          chunks = finishToolCallRound(chunks)
+          updateChatSome(originalCsid, targetIndex, {
+            chunks,
+            toolCalling: chunks.some(c => c.type === 'tool_call' && c.loading),
+          })
         }
-        // 标记所有段落加载完成，并将思考段落折叠
-        chunks = chunks.map((chunk) => {
-          if (chunk.type === 'think')
-            return { ...chunk, loading: false, collapsed: true }
-          return { ...chunk, loading: false }
-        })
-
-        // 当 finishReason 为 stop 时获取标题
-        if (data.finishReason === 'stop') {
-          const finalCsid = data.csid || originalCsid
-
-          // 优先使用服务端返回的标题，否则调用 API 获取
-          if (data.title) {
-            chatStore.updateHistory(finalCsid, { title: data.title })
+        else {
+          // 清理延迟折叠定时器
+          if (thinkCollapseTimer) {
+            clearTimeout(thinkCollapseTimer)
+            thinkCollapseTimer = null
           }
-          else {
-            fetchConversationTitle(finalCsid).then((res: any) => {
-              const title = res?.data?.data?.title
-              if (title)
-                chatStore.updateHistory(finalCsid, { title })
-            }).catch((err) => {
-              console.warn('Failed to update conversation title:', err)
-            })
+          // 标记所有段落加载完成，并将思考段落折叠
+          chunks = chunks.map((chunk) => {
+            if (chunk.type === 'think')
+              return { ...chunk, loading: false, collapsed: true }
+            return { ...chunk, loading: false }
+          })
+
+          // 当 finishReason 为 stop 时获取标题
+          if (data.finishReason === 'stop') {
+            const finalCsid = data.csid || originalCsid
+
+            // 优先使用服务端返回的标题，否则调用 API 获取
+            if (data.title) {
+              chatStore.updateHistory(finalCsid, { title: data.title })
+            }
+            else {
+              fetchConversationTitle(finalCsid).then((res: any) => {
+                const title = res?.data?.data?.title
+                if (title)
+                  chatStore.updateHistory(finalCsid, { title })
+              }).catch((err) => {
+                console.warn('Failed to update conversation title:', err)
+              })
+            }
           }
+          updateChatSome(originalCsid, targetIndex, { loading: false, chunks })
         }
-        updateChatSome(originalCsid, targetIndex, { loading: false, chunks })
       }
 
       scrollToBottomIfAtBottom()
@@ -320,7 +291,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
   }
 
   // 执行请求（支持长回复的循环请求）
-  const fetchWithLongReply = async (_onMessage?: (data: StreamMessage) => void) => {
+  const fetchWithLongReply = async () => {
     let continueRequest = false
 
     do {
@@ -333,18 +304,16 @@ function createSSEHandler(options: SSEHandlerOptions) {
         regen,
         signal,
         onMessage: (data: StreamMessage) => {
+          // 每条 SSE 消息只处理一次：重复处理会让工具调用被落地两遍
           const shouldContinue = handleMessage(data)
           if (shouldContinue)
             continueRequest = true
-
-          _onMessage?.(data)
         },
       })
     } while (continueRequest)
   }
 
   return {
-    handleMessage,
     fetch: fetchWithLongReply,
     getChunks: () => chunks,
     close: () => {
@@ -437,7 +406,7 @@ async function onConversation() {
       signal: localController.signal,
     })
 
-    await handler.fetch(handler.handleMessage)
+    await handler.fetch()
 
     const finalIndex = chatStore.getChatByCsid(startedCsid).length - 1
     updateChatSome(startedCsid, finalIndex, { loading: false, chunks: handler.getChunks() })
@@ -552,7 +521,7 @@ async function onRegenerate(index: number) {
       signal: localController.signal,
     })
 
-    await handler.fetch(handler.handleMessage)
+    await handler.fetch()
 
     updateChatSome(startedCsid, index, { loading: false, chunks: handler.getChunks() })
   }

@@ -166,6 +166,42 @@ html.dark .think-content::-webkit-scrollbar-thumb {
 	background: #605540;
 }
 
+// 工具调用折叠条目
+.tool-call-item {
+	margin-bottom: 0.25rem;
+}
+
+// 展开态的参数盒：跟随外层气泡宽度，长内容限高滚动
+.tool-call-content {
+	animation: fadeIn 0.2s ease;
+	max-height: 400px;
+	overflow-y: auto;
+
+	&::-webkit-scrollbar {
+		width: 4px;
+	}
+
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background: #c0b0a0;
+		border-radius: 2px;
+	}
+}
+
+.tool-call-args {
+	margin: 0;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+html.dark .tool-call-content::-webkit-scrollbar-thumb {
+	background: #605540;
+}
+
 @keyframes fadeIn {
 	from {
 		opacity: 0;

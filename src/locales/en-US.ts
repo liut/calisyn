@@ -58,6 +58,7 @@ export default {
     thinkingWithDuration: 'Thinking {seconds}s',
     thoughtFor: 'Thought for {seconds}s',
     toolCall: 'Tool call',
+    generating: 'Generating…',
   },
   setting: {
     setting: 'Setting',

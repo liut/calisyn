@@ -127,20 +127,29 @@ async function handleCopy() {
           :as-raw-text="asRawText"
         />
         <div class="flex flex-col">
+          <!-- 流式期间原地换成等待指示：与下方按钮同尺寸，流结束时布局不位移 -->
+          <div
+            v-if="loading"
+            class="message-waiting-indicator mb-2 flex items-center justify-center text-neutral-300 dark:text-neutral-200"
+            :title="t('chat.generating')"
+          >
+            <SvgIcon icon="ri:loader-4-line" class="animate-spin" />
+          </div>
           <button
-            v-if="!inversion"
-            class="mb-2 transition text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-300"
+            v-else-if="!inversion"
+            class="message-regenerate mb-2 transition text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-300"
             @click="handleRegenerate"
           >
             <SvgIcon icon="ri:restart-line" />
           </button>
           <NDropdown
+            v-if="!loading"
             :trigger="isMobile ? 'click' : 'hover'"
             :placement="!inversion ? 'right' : 'left'"
             :options="options"
             @select="handleSelect"
           >
-            <button class="transition text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-200">
+            <button class="message-more transition text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-200">
               <SvgIcon icon="ri:more-2-fill" />
             </button>
           </NDropdown>

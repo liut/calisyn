@@ -57,6 +57,7 @@ export default {
     thinkingWithDuration: '생각 중 {seconds}초',
     thoughtFor: '{seconds}초 동안 생각',
     toolCall: '도구 호출',
+    generating: '생성 중…',
   },
   setting: {
     setting: '설정',

@@ -54,6 +54,7 @@ export default {
     preview: 'Avance',
     showRawText: 'Mostrar como texto sin formato',
     toolCall: 'Llamada a herramienta',
+    generating: 'Generando…',
   },
   setting: {
     setting: 'Configuración',

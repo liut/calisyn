@@ -57,6 +57,7 @@ export default {
     thinkingWithDuration: 'Đang suy nghĩ {seconds}s',
     thoughtFor: 'Đã suy nghĩ {seconds}s',
     toolCall: 'Lệnh gọi công cụ',
+    generating: 'Đang tạo…',
   },
   setting: {
     setting: 'Cài đặt',

@@ -58,8 +58,15 @@ export default {
     thinkingWithDuration: 'Thinking {seconds}s',
     thoughtFor: 'Thought for {seconds}s',
     toolCall: 'Tool call',
-    generating: 'Generating…',
   },
+  waiting: [
+    'Racking my brains…',
+    'Burning brain cells…',
+    'Rummaging through memories…',
+    'Going full speed…',
+    'Writing furiously…',
+    'Turning an idea into words…',
+  ],
   setting: {
     setting: 'Setting',
     general: 'General',

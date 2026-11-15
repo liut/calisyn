@@ -57,8 +57,15 @@ export default {
     thinkingWithDuration: '생각 중 {seconds}초',
     thoughtFor: '{seconds}초 동안 생각',
     toolCall: '도구 호출',
-    generating: '생성 중…',
   },
+  waiting: [
+    '머리를 짜내며…',
+    '뇌세포를 태우는 중…',
+    '기억을 더듬어내는 중…',
+    '전력 질주하는 중…',
+    '마구 필질하는 중…',
+    '아이디어를 문장으로 만드는 중…',
+  ],
   setting: {
     setting: '설정',
     general: '일반',

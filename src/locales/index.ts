@@ -31,6 +31,22 @@ const i18n = createI18n({
 
 export const t = i18n.global.t
 
+/** 等待提示的短语库：每种语言一组，运行时随机取一条。 */
+const waitingPhrases: Record<string, string[]> = {
+  'en-US': enUS.waiting,
+  'es-ES': esES.waiting,
+  'ko-KR': koKR.waiting,
+  'ru-RU': ruRU.waiting,
+  'vi-VN': viVN.waiting,
+  'zh-CN': zhCN.waiting,
+  'zh-TW': zhTW.waiting,
+}
+
+/** 当前语言的等待提示短语库。 */
+export function waitingPool(): string[] {
+  return waitingPhrases[i18n.global.locale] ?? waitingPhrases[defaultLocale]
+}
+
 export function setLocale(locale: Language) {
   i18n.global.locale = locale
 }

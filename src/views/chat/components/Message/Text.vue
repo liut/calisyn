@@ -20,6 +20,7 @@ interface Props {
   toolCalling?: boolean
   toolCalls?: Chat.Tool[]
   chunks?: Chat.MessageChunk[]
+  waitingTip?: string
 }
 
 const props = defineProps<Props>()
@@ -497,6 +498,12 @@ onUnmounted(() => {
       </div>
       <div v-else class="whitespace-pre-wrap" v-text="text" />
     </div>
+    <p
+      v-if="!inversion && loading && waitingTip"
+      class="message-stream-waiting-tip mt-2 text-xs text-neutral-400 dark:text-neutral-500"
+    >
+      {{ waitingTip }}
+    </p>
   </div>
 </template>
 

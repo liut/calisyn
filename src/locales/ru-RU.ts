@@ -57,8 +57,15 @@ export default {
     thinkingWithDuration: 'Думаю {seconds}с',
     thoughtFor: 'Думал {seconds}с',
     toolCall: 'Вызов инструмента',
-    generating: 'Генерирую…',
   },
+  waiting: [
+    'Ломаю голову…',
+    'Сжигаем нейроны…',
+    'Перебирая воспоминания…',
+    'На полной скорости…',
+    'Яростно строчу…',
+    'Превращаю идею в слова…',
+  ],
   setting: {
     setting: 'Настройки',
     general: 'Общее',

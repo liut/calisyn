@@ -8,7 +8,7 @@ import zhCN from './zh-CN'
 import zhTW from './zh-TW'
 
 /** 以 zh-CN 为基准：任一语言漏键、多键或插值参数不一致，页面就会出现缺文案或原始 key。 */
-const messages: Record<string, { corpus: Record<string, string>, skill: Record<string, string>, memory: Record<string, string> }> = {
+const messages: Record<string, { corpus: Record<string, string>, skill: Record<string, string>, memory: Record<string, string>, waiting: string[] }> = {
   'zh-CN': zhCN,
   'en-US': enUS,
   'zh-TW': zhTW,
@@ -68,5 +68,17 @@ describe('locale messages', () => {
       for (const [lang, message] of Object.entries(messages))
         expect(placeholders(message.memory[key] as string), `${lang}.${key}`).toEqual(placeholders(value))
     }
+  })
+
+  it('keeps the waiting phrase count identical across languages', () => {
+    const base = zhCN.waiting.length
+
+    for (const [lang, message] of Object.entries(messages))
+      expect(message.waiting.length, lang).toBe(base)
+  })
+
+  it('keeps no empty waiting phrase', () => {
+    for (const [lang, message] of Object.entries(messages))
+      expect(message.waiting.every(phrase => phrase.trim() !== ''), lang).toBe(true)
   })
 })

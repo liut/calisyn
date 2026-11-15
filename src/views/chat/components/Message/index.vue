@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { useIconRender } from '@/hooks/useIconRender'
-import { t } from '@/locales'
+import { t, waitingPool } from '@/locales'
 import { copyToClip } from '@/utils/copy'
 import AvatarComponent from './Avatar.vue'
 import TextComponent from './Text.vue'
@@ -40,6 +40,10 @@ const textRef = ref<HTMLElement>()
 const asRawText = ref(props.inversion)
 
 const messageRef = ref<HTMLElement>()
+
+// 每条消息固定一条等待提示：流式期间不跳动，切换语言时同步换语种
+const waitingIndex = Math.floor(Math.random() * waitingPool().length)
+const waitingTip = computed(() => waitingPool()[waitingIndex] ?? '')
 
 const options = computed(() => {
   const common = [
@@ -124,6 +128,7 @@ async function handleCopy() {
           :tool-calling="toolCalling"
           :tool-calls="toolCalls"
           :chunks="chunks"
+          :waiting-tip="waitingTip"
           :as-raw-text="asRawText"
         />
         <div class="flex flex-col">
@@ -131,7 +136,7 @@ async function handleCopy() {
           <div
             v-if="loading"
             class="message-waiting-indicator mb-2 flex items-center justify-center text-neutral-300 dark:text-neutral-200"
-            :title="t('chat.generating')"
+            :title="waitingTip"
           >
             <SvgIcon icon="ri:loader-4-line" class="animate-spin" />
           </div>

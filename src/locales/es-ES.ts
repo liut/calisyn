@@ -54,8 +54,15 @@ export default {
     preview: 'Avance',
     showRawText: 'Mostrar como texto sin formato',
     toolCall: 'Llamada a herramienta',
-    generating: 'Generando…',
   },
+  waiting: [
+    'Rompiéndome la cabeza…',
+    'Quemando neuronas…',
+    'Removiendo entre los recuerdos…',
+    'A toda velocidad…',
+    'Escribiendo a toda máquina…',
+    'Convirtiendo una idea en palabras…',
+  ],
   setting: {
     setting: 'Configuración',
     general: 'General',

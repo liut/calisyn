@@ -58,8 +58,15 @@ export default {
     thinkingWithDuration: '思考中 {seconds}秒',
     thoughtFor: '思考 {seconds}秒',
     toolCall: '工具呼叫',
-    generating: '生成中…',
   },
+  waiting: [
+    '正在絞盡腦汁…',
+    '正在燃燒腦細胞…',
+    '正在翻找記憶…',
+    '正在全力衝刺…',
+    '正在奮筆疾書…',
+    '正在把靈感變成文字…',
+  ],
   setting: {
     setting: '設定',
     general: '總覽',

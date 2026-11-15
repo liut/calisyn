@@ -1,10 +1,17 @@
 declare namespace Chat {
 
+  // 工具调用状态：后端下发的终态（ok / error / rejected）+ 前端自有值
+  type ToolStatus = 'running' | 'ok' | 'error' | 'rejected' | 'aborted' | 'unknown'
+
   interface Tool {
     name: string
     arguments?: string
     id?: string
     collapsed?: boolean // 是否折叠（单个调用级折叠态）
+    status?: ToolStatus // 调用状态（缺省视为 running）
+    errorCode?: string // 后端 err 枚举原文（文案映射在渲染层做）
+    duration?: number // 执行耗时（毫秒）
+    resultLength?: number // 结果原始字符数
   }
 
   // 消息段落类型

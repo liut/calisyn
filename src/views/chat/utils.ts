@@ -1,4 +1,4 @@
-import type { ToolCall } from '@/api'
+import type { ToolCall, ToolResult } from '@/api'
 
 /**
  * 工具调用落地的纯函数。
@@ -17,6 +17,7 @@ export function normalizeToolCalls(rawCalls: ToolCall[]): Chat.Tool[] {
     id: tc?.id || '',
     name: tc?.function?.name || '',
     arguments: tc?.function?.arguments || '',
+    status: 'running' as Chat.ToolStatus,
   }))
 }
 
@@ -57,8 +58,9 @@ export function applyToolCalls(
     // 无 id 的调用按到达顺序追加，互不覆盖
     const idx = call.id ? merged.findIndex(item => item.id === call.id) : -1
     if (idx >= 0) {
-      // 参数续传：覆盖参数，保留既有条目的折叠态
-      merged[idx] = { ...merged[idx], ...call }
+      // 参数续传：只覆盖名字与参数，保留既有条目的折叠态与状态
+      // （结果可能已落地终态，不能被打回 running）
+      merged[idx] = { ...merged[idx], name: call.name, arguments: call.arguments }
     }
     else {
       merged.push(call)
@@ -72,8 +74,10 @@ export function applyToolCalls(
 }
 
 /**
- * 标记「本轮工具调用已结束」：该段落停止加载，其中的调用自动折叠。
+ * 标记「本轮工具调用已结束」：该段落停止加载。
  * 只处理末段——更早的轮次在各自结束时已经处理过。
+ * 条目的折叠改由结果到达（applyToolResult）或流收束（settleToolCalls）驱动，
+ * 此处在「刚发起」时点不折叠，用户才能看到执行过程。
  */
 export function finishToolCallRound(chunks: Chat.MessageChunk[]): Chat.MessageChunk[] {
   const last = chunks[chunks.length - 1]
@@ -82,12 +86,112 @@ export function finishToolCallRound(chunks: Chat.MessageChunk[]): Chat.MessageCh
 
   return [
     ...chunks.slice(0, -1),
-    {
-      ...last,
-      loading: false,
-      toolCalls: (last.toolCalls ?? []).map(call => ({ ...call, collapsed: true })),
-    },
+    { ...last, loading: false },
   ]
+}
+
+/**
+ * 把一条工具执行结果落到配对的调用条目上，返回新的段落数组（不修改入参）。
+ *
+ * 配对主键是 `result.callID` ↔ 条目的 `id`；从后往前找，结果消息总是跟在
+ * 对应调用之后。配对成功时写入状态与元信息并把条目折叠；配对不上时静默
+ * 忽略——不新建条目、不抛错、不影响其余渲染。
+ */
+export function applyToolResult(
+  chunks: Chat.MessageChunk[],
+  result: ToolResult,
+): Chat.MessageChunk[] {
+  for (let i = chunks.length - 1; i >= 0; i--) {
+    const chunk = chunks[i]
+    if (chunk.type !== 'tool_call')
+      continue
+
+    const tools = chunk.toolCalls ?? []
+    const idx = tools.findIndex(tool => tool.id === result.callID)
+    if (idx < 0)
+      continue
+
+    const updated = [...tools]
+    updated[idx] = {
+      ...updated[idx],
+      status: result.status,
+      errorCode: result.err,
+      duration: result.dur,
+      resultLength: result.clen,
+      collapsed: true,
+    }
+
+    const next = [...chunks]
+    next[i] = { ...chunk, toolCalls: updated }
+    return next
+  }
+
+  return chunks
+}
+
+/**
+ * 流结束时收束仍处于「执行中」的条目：取消 → `aborted`，正常结束无结果 →
+ * `unknown`。已经是终态的条目不动；函数幂等，可重复调用。
+ */
+export function settleToolCalls(
+  chunks: Chat.MessageChunk[],
+  status: 'aborted' | 'unknown',
+): Chat.MessageChunk[] {
+  let changed = false
+  const next = chunks.map((chunk) => {
+    if (chunk.type !== 'tool_call')
+      return chunk
+
+    let chunkChanged = false
+    const tools = (chunk.toolCalls ?? []).map((tool) => {
+      if (tool.status && tool.status !== 'running')
+        return tool
+
+      chunkChanged = true
+      return { ...tool, status, collapsed: true }
+    })
+
+    if (chunkChanged)
+      changed = true
+
+    return chunkChanged ? { ...chunk, toolCalls: tools } : chunk
+  })
+
+  return changed ? next : chunks
+}
+
+/** 工具状态到文案 key 的映射；缺状态视为「执行中」（收束前）。 */
+const TOOL_STATUS_KEYS: Record<Chat.ToolStatus, string> = {
+  running: 'chat.toolStatusRunning',
+  ok: 'chat.toolStatusOk',
+  error: 'chat.toolStatusError',
+  rejected: 'chat.toolStatusRejected',
+  aborted: 'chat.toolStatusAborted',
+  unknown: 'chat.toolStatusUnknown',
+}
+
+export function toolStatusKey(status?: Chat.ToolStatus): string {
+  return TOOL_STATUS_KEYS[status ?? 'running']
+}
+
+/** 错误码枚举到文案 key 的映射；枚举外的码兜底展示原文（含 code 插值）。 */
+const TOOL_ERROR_KEYS: Record<string, string> = {
+  invalid_arguments: 'chat.toolErrorInvalidArguments',
+  unsupported_type: 'chat.toolErrorUnsupportedType',
+  panic: 'chat.toolErrorPanic',
+  execution_failed: 'chat.toolErrorExecutionFailed',
+  tool_error: 'chat.toolErrorToolError',
+  permission_denied: 'chat.toolErrorPermissionDenied',
+  rejected: 'chat.toolErrorRejected',
+}
+
+export const TOOL_ERROR_FALLBACK_KEY = 'chat.toolErrorUnknown'
+
+export function toolErrorKey(code?: string): string {
+  if (!code)
+    return TOOL_ERROR_FALLBACK_KEY
+
+  return TOOL_ERROR_KEYS[code] ?? TOOL_ERROR_FALLBACK_KEY
 }
 
 /** 判断结束原因是否代表「本轮工具调用结束」而非「整条消息结束」。 */

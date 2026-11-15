@@ -9,7 +9,7 @@ import { SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
 import { copyToClip } from '@/utils/copy'
-import { formatToolArguments, summarizeToolArguments } from '../../utils'
+import { formatToolArguments, summarizeToolArguments, toolErrorKey, toolStatusKey } from '../../utils'
 
 interface Props {
   inversion?: boolean
@@ -253,6 +253,28 @@ function isToolCallCollapsed(idx: number, tcIdx: number, tc: Chat.Tool): boolean
   return manualState !== undefined ? manualState : !!tc.collapsed
 }
 
+// 工具状态徽标的配色：语义色文字，执行中带脉冲
+function toolStatusClass(status?: Chat.ToolStatus): string {
+  switch (status ?? 'running') {
+    case 'ok':
+      return 'text-[#3a8a3a] dark:text-[#4aa44a]'
+    case 'error':
+      return 'text-[#c04545] dark:text-[#d05a5a]'
+    case 'rejected':
+      return 'text-[#b08030] dark:text-[#c09040]'
+    case 'aborted':
+    case 'unknown':
+      return 'text-gray-400 dark:text-gray-500'
+    default:
+      return 'text-gray-400 dark:text-gray-500 animate-pulse'
+  }
+}
+
+// 错误码文案：枚举映射本地化文案，未知码兜底显示原文
+function toolErrorText(code?: string): string {
+  return t(toolErrorKey(code), { code: code ?? '' })
+}
+
 // 切换思考段落的折叠状态
 function toggleThinkCollapse(index: number, chunk: Chat.MessageChunk) {
   const currentState = thinkCollapsedStates.value.get(index)
@@ -429,16 +451,33 @@ onUnmounted(() => {
                     />
                     <span class="shrink-0 text-gray-500 font-medium">{{ tc.name }}</span>
                     <span
+                      class="tool-status-badge shrink-0 text-xs"
+                      :class="toolStatusClass(tc.status)"
+                    >{{ t(toolStatusKey(tc.status)) }}</span>
+                    <span
+                      v-if="tc.duration !== undefined"
+                      class="shrink-0 text-xs text-gray-400"
+                    >{{ t('chat.toolDuration', { duration: tc.duration }) }}</span>
+                    <span
                       v-if="isToolCallCollapsed(idx, tcIdx, tc)"
                       class="tool-call-summary flex-1 min-w-0 truncate text-[#4a9a4a] dark:text-[#3a8a3a]"
                     >{{ summarizeToolArguments(tc.arguments || '') }}</span>
-                    <span v-if="chunk.loading" class="shrink-0 text-gray-400 animate-pulse">...</span>
+                    <span v-if="(tc.status ?? 'running') === 'running'" class="shrink-0 text-gray-400 animate-pulse">...</span>
                   </div>
                   <div
                     v-show="!isToolCallCollapsed(idx, tcIdx, tc)"
                     class="tool-call-content mt-2 w-full box-border px-3 py-2 border border-[#e0d5c8] dark:border-[#4a4538] rounded-lg bg-[#faf8f5] dark:bg-[#2a2618]"
                   >
                     <pre class="tool-call-args whitespace-pre-wrap break-words">{{ formatToolArguments(tc.arguments || '') }}</pre>
+                    <div v-if="tc.errorCode" class="mt-2 text-xs">
+                      <span class="tool-error-text text-[#c04545] dark:text-[#d05a5a]">{{ toolErrorText(tc.errorCode) }}</span>
+                    </div>
+                    <div
+                      v-if="tc.resultLength !== undefined"
+                      class="mt-1 text-xs text-gray-400"
+                    >
+                      {{ t('chat.toolResultLength', { count: tc.resultLength }) }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -477,6 +516,14 @@ onUnmounted(() => {
                 />
                 <span class="shrink-0 text-green-500 font-medium">{{ tc.name }}</span>
                 <span
+                  class="tool-status-badge shrink-0 text-xs"
+                  :class="toolStatusClass(tc.status)"
+                >{{ t(toolStatusKey(tc.status)) }}</span>
+                <span
+                  v-if="tc.duration !== undefined"
+                  class="shrink-0 text-xs text-gray-400"
+                >{{ t('chat.toolDuration', { duration: tc.duration }) }}</span>
+                <span
                   v-if="isToolCallCollapsed(-1, tcIdx, tc)"
                   class="tool-call-summary flex-1 min-w-0 truncate text-gray-500"
                 >{{ summarizeToolArguments(tc.arguments || '') }}</span>
@@ -486,6 +533,15 @@ onUnmounted(() => {
                 class="tool-call-content mt-2 w-full box-border px-3 py-2 border border-[#e0d5c8] dark:border-[#4a4538] rounded-lg bg-[#faf8f5] dark:bg-[#2a2618]"
               >
                 <pre class="tool-call-args whitespace-pre-wrap break-words">{{ formatToolArguments(tc.arguments || '') }}</pre>
+                <div v-if="tc.errorCode" class="mt-2 text-xs">
+                  <span class="tool-error-text text-[#c04545] dark:text-[#d05a5a]">{{ toolErrorText(tc.errorCode) }}</span>
+                </div>
+                <div
+                  v-if="tc.resultLength !== undefined"
+                  class="mt-1 text-xs text-gray-400"
+                >
+                  {{ t('chat.toolResultLength', { count: tc.resultLength }) }}
+                </div>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 ---
 title: 'feat: 工具执行结果反馈到工具卡片'
 type: feat
-status: planned
+status: completed
 date: 2026-11-15
 origin: docs/brainstorms/2026-11-15-tool-result-feedback-requirements.md
 ---

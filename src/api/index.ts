@@ -39,14 +39,24 @@ export interface ToolCall {
   function?: Function
   type?: 'function'
 }
+export interface ToolResult {
+  callID: string
+  status: 'ok' | 'error' | 'rejected'
+  err?: string
+  dur: number
+  clen: number
+}
+
 export interface StreamMessage {
   id: string
   csid?: string
   pmid?: string
+  role?: string
   delta?: string
   think?: string
   text?: string
   toolCalls?: Array<ToolCall>
+  toolResult?: ToolResult
   finishReason?: string
   title?: string
 }

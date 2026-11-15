@@ -16,7 +16,7 @@ import HeaderComponent from './components/Header/index.vue'
 import { useChat } from './hooks/useChat'
 import { useScroll } from './hooks/useScroll'
 import { useUsingContext } from './hooks/useUsingContext'
-import { applyToolCalls, finishToolCallRound, isToolCallFinishReason } from './utils'
+import { applyToolCalls, applyToolResult, finishToolCallRound, isToolCallFinishReason, settleToolCalls } from './utils'
 
 const controller: AbortController | null = null
 
@@ -79,7 +79,8 @@ function createSSEHandler(options: SSEHandlerOptions) {
       return
 
     // 忽略空消息（但允许只有 finishReason 或 title 的消息，用于更新标题等）
-    const hasContent = (data.toolCalls && data.toolCalls.length > 0) || data.delta || data.think || data.text || data.finishReason || data.title
+    // toolResult 消息只有 role / toolResult / csid，必须放行才能进入工具结果分支
+    const hasContent = (data.toolCalls && data.toolCalls.length > 0) || data.delta || data.think || data.text || data.toolResult || data.finishReason || data.title
     if (!hasContent)
       return
 
@@ -103,6 +104,11 @@ function createSSEHandler(options: SSEHandlerOptions) {
 
       chunks = applyToolCalls(chunks, data.toolCalls, data.finishReason)
     }
+
+    // 处理工具执行结果：按 callID 配对到既有条目，就地更新状态并折叠；
+    // 不新建段落（结果不是一轮对话），配对不上时静默忽略
+    if (data.toolResult)
+      chunks = applyToolResult(chunks, data.toolResult)
 
     // 处理思考内容
     if (data.think) {
@@ -238,7 +244,7 @@ function createSSEHandler(options: SSEHandlerOptions) {
       }
       else if (data.finishReason) {
         if (isToolCallFinishReason(data.finishReason)) {
-          // 本轮工具调用结束：只结束该轮并自动折叠，
+          // 本轮工具调用结束：只结束该轮的加载态，
           // 整条消息仍在继续（agent 循环还有后续轮次），不熄灭加载态
           chunks = finishToolCallRound(chunks)
           updateChatSome(originalCsid, targetIndex, {
@@ -258,6 +264,10 @@ function createSSEHandler(options: SSEHandlerOptions) {
               return { ...chunk, loading: false, collapsed: true }
             return { ...chunk, loading: false }
           })
+
+          // 收束仍「执行中」的工具条目：正常结束却始终没有结果，
+          // 记为「状态未知」（后端未升级或结果丢失），不留永久执行中
+          chunks = settleToolCalls(chunks, 'unknown')
 
           // 当 finishReason 为 stop 时获取标题
           if (data.finishReason === 'stop') {
@@ -325,10 +335,11 @@ function createSSEHandler(options: SSEHandlerOptions) {
   }
 }
 
-// 未知原因刷新页面，loading 状态不会重置，手动重置
+// 未知原因刷新页面，loading 状态不会重置，手动重置；
+// 刷新意味着流已死亡，仍在「执行中」的工具条目一并收束为「状态未知」
 dataSources.value.forEach((item, index) => {
   if (item?.loading)
-    updateChatSome(csid.value, index, { loading: false })
+    updateChatSome(csid.value, index, { loading: false, chunks: settleToolCalls(item.chunks ?? [], 'unknown') })
 })
 
 function handleSubmit() {
@@ -421,6 +432,8 @@ async function onConversation() {
         finalIndex,
         {
           loading: false,
+          // 用户取消：仍在执行中的工具条目收束为「已中断」
+          ...(handler && { chunks: settleToolCalls(handler.getChunks(), 'aborted') }),
         },
       )
       scrollToBottomIfAtBottom()
@@ -532,6 +545,8 @@ async function onRegenerate(index: number) {
         index,
         {
           loading: false,
+          // 用户取消：仍在执行中的工具条目收束为「已中断」
+          ...(handler && { chunks: settleToolCalls(handler.getChunks(), 'aborted') }),
         },
       )
       return

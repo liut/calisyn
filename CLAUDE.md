@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `AGENTS.md` is a symlink to this file — keep edits here.
 - Git commit messages are written in English: conventional-commit subject (e.g. `feat(skill): ...`), body lines at most 100 characters (commitlint's `body-max-line-length` rejects longer ones).
-- Documentation-only changes (this file, `docs/`, comments) are committed straight to `main` — no branch and no pull request. Code changes still go through a branch and a PR.
+
 
 ## Project Overview
 
@@ -109,6 +109,9 @@ cd service && pnpm lint     # Backend lint
 - `service/src/llm/tools.ts` - Tool registry with `web_fetch` (SSRF protected)
 - `src/utils/request/axios.ts` - Axios instance with interceptors
 - `src/store/modules/chat/index.ts` - Chat state management
+- `src/views/chat/utils.ts` - tool call landing, tool result pairing and status
+  transition (`applyToolCalls` / `applyToolResult` / `settleToolCalls`), covered by
+  `src/views/chat/utils.test.ts`
 - `src/api/skill.ts` - skill CRUD against morrigan (`/skills`, `/skills/{name}`)
 - `src/views/skill/` - skill page: list panel, create modal, detail drawer, and `utils.ts` holding
   the pure validation / frontmatter compose-parse / diff-patch helpers used by those components

@@ -71,7 +71,9 @@ export default {
     toolErrorPermissionDenied: 'Доступ запрещён',
     toolErrorRejected: 'Вызов отклонён',
     toolErrorUnknown: 'Неизвестная ошибка ({code})',
-    toolDuration: '{duration} мс',
+    toolDurationMs: '{duration} мс',
+    toolDurationSeconds: '{seconds} с',
+    toolDurationMinutes: '{minutes} мин {seconds} с',
     toolResultLength: 'Результат: {count} симв.',
   },
   waiting: [

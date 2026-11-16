@@ -71,7 +71,9 @@ export default {
     toolErrorPermissionDenied: 'Permiso denegado',
     toolErrorRejected: 'Llamada rechazada',
     toolErrorUnknown: 'Error desconocido ({code})',
-    toolDuration: '{duration} ms',
+    toolDurationMs: '{duration} ms',
+    toolDurationSeconds: '{seconds} s',
+    toolDurationMinutes: '{minutes} min {seconds} s',
     toolResultLength: '{count} caracteres',
   },
   waiting: [

@@ -9,7 +9,7 @@ import { SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { t } from '@/locales'
 import { copyToClip } from '@/utils/copy'
-import { formatToolArguments, summarizeToolArguments, toolErrorKey, toolStatusKey } from '../../utils'
+import { formatToolArguments, summarizeToolArguments, toolDurationDisplay, toolErrorKey, toolStatusKey } from '../../utils'
 
 interface Props {
   inversion?: boolean
@@ -275,6 +275,15 @@ function toolErrorText(code?: string): string {
   return t(toolErrorKey(code), { code: code ?? '' })
 }
 
+// 工具耗时文案：按毫秒 / 秒 / 分+秒分级格式化
+function toolDurationText(duration?: number): string {
+  if (duration === undefined)
+    return ''
+
+  const { key, params } = toolDurationDisplay(duration)
+  return t(key, params)
+}
+
 // 切换思考段落的折叠状态
 function toggleThinkCollapse(index: number, chunk: Chat.MessageChunk) {
   const currentState = thinkCollapsedStates.value.get(index)
@@ -457,7 +466,7 @@ onUnmounted(() => {
                     <span
                       v-if="tc.duration !== undefined"
                       class="shrink-0 text-xs text-gray-400"
-                    >{{ t('chat.toolDuration', { duration: tc.duration }) }}</span>
+                    >{{ toolDurationText(tc.duration) }}</span>
                     <span
                       v-if="isToolCallCollapsed(idx, tcIdx, tc)"
                       class="tool-call-summary flex-1 min-w-0 truncate text-[#4a9a4a] dark:text-[#3a8a3a]"
@@ -522,7 +531,7 @@ onUnmounted(() => {
                 <span
                   v-if="tc.duration !== undefined"
                   class="shrink-0 text-xs text-gray-400"
-                >{{ t('chat.toolDuration', { duration: tc.duration }) }}</span>
+                >{{ toolDurationText(tc.duration) }}</span>
                 <span
                   v-if="isToolCallCollapsed(-1, tcIdx, tc)"
                   class="tool-call-summary flex-1 min-w-0 truncate text-gray-500"

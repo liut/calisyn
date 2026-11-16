@@ -72,7 +72,9 @@ export default {
     toolErrorPermissionDenied: 'Permission denied',
     toolErrorRejected: 'Call rejected',
     toolErrorUnknown: 'Unknown error ({code})',
-    toolDuration: '{duration} ms',
+    toolDurationMs: '{duration} ms',
+    toolDurationSeconds: '{seconds}s',
+    toolDurationMinutes: '{minutes}m {seconds}s',
     toolResultLength: '{count} chars',
   },
   waiting: [

@@ -71,7 +71,9 @@ export default {
     toolErrorPermissionDenied: 'Quyền bị từ chối',
     toolErrorRejected: 'Lệnh gọi bị từ chối',
     toolErrorUnknown: 'Lỗi không xác định ({code})',
-    toolDuration: '{duration} ms',
+    toolDurationMs: '{duration} ms',
+    toolDurationSeconds: '{seconds} giây',
+    toolDurationMinutes: '{minutes} phút {seconds} giây',
     toolResultLength: 'Kết quả: {count} ký tự',
   },
   waiting: [

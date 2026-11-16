@@ -71,7 +71,9 @@ export default {
     toolErrorPermissionDenied: '권한이 거부됨',
     toolErrorRejected: '호출이 거부됨',
     toolErrorUnknown: '알 수 없는 오류({code})',
-    toolDuration: '{duration} ms',
+    toolDurationMs: '{duration} ms',
+    toolDurationSeconds: '{seconds}초',
+    toolDurationMinutes: '{minutes}분 {seconds}초',
     toolResultLength: '결과 {count}자',
   },
   waiting: [

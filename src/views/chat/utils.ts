@@ -18,6 +18,8 @@ export function normalizeToolCalls(rawCalls: ToolCall[]): Chat.Tool[] {
     name: tc?.function?.name || '',
     arguments: tc?.function?.arguments || '',
     status: 'running' as Chat.ToolStatus,
+    // 一律默认折叠（含执行中的调用），参数仅展示摘要，用户点击后展开
+    collapsed: true,
   }))
 }
 
@@ -76,8 +78,8 @@ export function applyToolCalls(
 /**
  * 标记「本轮工具调用已结束」：该段落停止加载。
  * 只处理末段——更早的轮次在各自结束时已经处理过。
- * 条目的折叠改由结果到达（applyToolResult）或流收束（settleToolCalls）驱动，
- * 此处在「刚发起」时点不折叠，用户才能看到执行过程。
+ * 条目的折叠不再随轮次状态变化：新条目落地即折叠（见 normalizeToolCalls），
+ * 此函数只负责停止加载，不触碰折叠态。
  */
 export function finishToolCallRound(chunks: Chat.MessageChunk[]): Chat.MessageChunk[] {
   const last = chunks[chunks.length - 1]
@@ -197,6 +199,30 @@ export function toolErrorKey(code?: string): string {
 /** 判断结束原因是否代表「本轮工具调用结束」而非「整条消息结束」。 */
 export function isToolCallFinishReason(finishReason?: string): boolean {
   return finishReason === 'tool_calls' || finishReason === 'tool_use'
+}
+
+const TOOL_DURATION_KEYS = {
+  ms: 'chat.toolDurationMs',
+  seconds: 'chat.toolDurationSeconds',
+  minutes: 'chat.toolDurationMinutes',
+} as const
+
+/**
+ * 把工具调用耗时（毫秒）分级格式化为 i18n key + 插值参数：
+ * - < 1000 ms：原值毫秒；
+ * - < 60 s：秒，保留 2 位小数；
+ * - ≥ 60 s：整分钟 + 余数秒（2 位小数）。
+ */
+export function toolDurationDisplay(ms: number): { key: string, params: Record<string, string | number> } {
+  if (ms < 1000)
+    return { key: TOOL_DURATION_KEYS.ms, params: { duration: ms } }
+
+  if (ms < 60_000)
+    return { key: TOOL_DURATION_KEYS.seconds, params: { seconds: (ms / 1000).toFixed(2) } }
+
+  const minutes = Math.floor(ms / 60_000)
+  const seconds = ((ms % 60_000) / 1000).toFixed(2)
+  return { key: TOOL_DURATION_KEYS.minutes, params: { minutes, seconds } }
 }
 
 /**

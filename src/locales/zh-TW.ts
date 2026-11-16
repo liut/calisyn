@@ -72,7 +72,9 @@ export default {
     toolErrorPermissionDenied: '權限不足',
     toolErrorRejected: '呼叫被拒絕',
     toolErrorUnknown: '未知錯誤（{code}）',
-    toolDuration: '{duration} ms',
+    toolDurationMs: '{duration} ms',
+    toolDurationSeconds: '{seconds}秒',
+    toolDurationMinutes: '{minutes}分{seconds}秒',
     toolResultLength: '結果 {count} 字元',
   },
   waiting: [

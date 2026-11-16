@@ -10,6 +10,7 @@ import {
   settleToolCalls,
   summarizeToolArguments,
   TOOL_ERROR_FALLBACK_KEY,
+  toolDurationDisplay,
   toolErrorKey,
   toolStatusKey,
 } from './utils'
@@ -107,12 +108,12 @@ describe('applyToolCalls', () => {
     expect(allCalls(chunks)[0].errorCode).toBe('execution_failed')
   })
 
-  /** 新条目以「执行中」起步，结果到达前保持展开。 */
-  it('marks new entries as running and expanded', () => {
+  /** 新条目以「执行中 + 折叠」起步，参数默认只显示摘要。 */
+  it('marks new entries as running and collapsed', () => {
     const chunks = applyToolCalls([], [call('a1', 'exec', '{}')])
 
     expect(allCalls(chunks)[0].status).toBe('running')
-    expect(allCalls(chunks)[0].collapsed).toBeUndefined()
+    expect(allCalls(chunks)[0].collapsed).toBe(true)
   })
 
   it('does not mutate the given chunks', () => {
@@ -125,13 +126,13 @@ describe('applyToolCalls', () => {
 })
 
 describe('finishToolCallRound', () => {
-  it('stops loading without collapsing the calls', () => {
+  it('stops loading without changing the collapsed state', () => {
     let chunks: Chat.MessageChunk[] = []
     chunks = applyToolCalls(chunks, [call('a1', 'exec', '{}')], 'tool_calls')
     chunks = finishToolCallRound(chunks)
 
     expect(chunks[0].loading).toBe(false)
-    expect(allCalls(chunks)[0].collapsed).toBeUndefined()
+    expect(allCalls(chunks)[0].collapsed).toBe(true)
   })
 
   it('leaves the chunks untouched when the last paragraph is not a tool call', () => {
@@ -153,6 +154,25 @@ describe('isToolCallFinishReason', () => {
     expect(isToolCallFinishReason('stop')).toBe(false)
     expect(isToolCallFinishReason('length')).toBe(false)
     expect(isToolCallFinishReason(undefined)).toBe(false)
+  })
+})
+
+describe('toolDurationDisplay', () => {
+  it('keeps milliseconds below one second', () => {
+    expect(toolDurationDisplay(0)).toEqual({ key: 'chat.toolDurationMs', params: { duration: 0 } })
+    expect(toolDurationDisplay(999)).toEqual({ key: 'chat.toolDurationMs', params: { duration: 999 } })
+  })
+
+  it('shows seconds with two decimals from one second up to a minute', () => {
+    expect(toolDurationDisplay(1000)).toEqual({ key: 'chat.toolDurationSeconds', params: { seconds: '1.00' } })
+    expect(toolDurationDisplay(1020)).toEqual({ key: 'chat.toolDurationSeconds', params: { seconds: '1.02' } })
+    expect(toolDurationDisplay(59_999)).toEqual({ key: 'chat.toolDurationSeconds', params: { seconds: '60.00' } })
+  })
+
+  it('shows minutes and remaining seconds from one minute up', () => {
+    expect(toolDurationDisplay(60_000)).toEqual({ key: 'chat.toolDurationMinutes', params: { minutes: 1, seconds: '0.00' } })
+    expect(toolDurationDisplay(62_030)).toEqual({ key: 'chat.toolDurationMinutes', params: { minutes: 1, seconds: '2.03' } })
+    expect(toolDurationDisplay(132_000)).toEqual({ key: 'chat.toolDurationMinutes', params: { minutes: 2, seconds: '12.00' } })
   })
 })
 
@@ -261,7 +281,7 @@ describe('applyToolResult', () => {
     applyToolResult(chunks, result('a1'))
 
     expect(allCalls(chunks)[0].status).toBe('running')
-    expect(allCalls(chunks)[0].collapsed).toBeUndefined()
+    expect(allCalls(chunks)[0].collapsed).toBe(true)
   })
 })
 
